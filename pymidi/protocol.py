@@ -9,8 +9,9 @@ import random
 import time
 
 from construct import Struct, Const, PaddedString, CString, Padding, Int8ub, Int16ub, Int32ub
-from construct import Int64ub, Bitwise, BitStruct, BitsInteger, Nibble, Flag, Optional
-from construct import If, IfThenElse, GreedyBytes, GreedyRange, VarInt
+from construct import Int64ub, Bitwise, BitStruct, BitsInteger, Nibble, Flag, Optional, Bytes
+from construct import If, IfThenElse, GreedyBytes, GreedyRange, VarInt, FixedSized, Byte, Computed
+from construct import Switch, Enum, Peek
 from construct import this as _this
 
 logger = logging.getLogger('pymidi.protocol')
@@ -52,6 +53,22 @@ MIDIPacketHeader = Struct(
     'ssrc' / Int32ub,
 )
 
+COMMAND_NOTE_OFF = 0x80
+COMMAND_NOTE_ON = 0x90
+COMMAND_AFTERTOUCH = 0xA0
+COMMAND_CONTROL_MODE_CHANGE = 0xB0
+
+
+# Global that stores the last-seen status, for running status support.
+# TODO(mikey): This *should* be possible without any state, by peeking
+# at the struct under construction; haven't figured it out.
+last_command = None
+
+
+def remember_last(obj, ctx):
+    global last_command
+    last_command = obj
+
 
 MIDIPacketCommand = Struct(
     'flags' / BitStruct(
@@ -62,15 +79,82 @@ MIDIPacketCommand = Struct(
         'len' / IfThenElse(_this.b == 0, BitsInteger(4), BitsInteger(12)),
     ),
     # 'midi_list' / Bytes(_this.flags.len),
-    'midi_list' / GreedyRange(Struct(
-        'delta_time' / If(_this._index != 0 or not _this.flags.z, VarInt),
-        'command' / BitStruct(
-            'command' / Nibble,
-            'channel' / Nibble,
+    'midi_list' / FixedSized(_this.flags.len, GreedyRange(Struct(
+        'delta_time' / If(_this._index > 0, VarInt),
+
+        # The "running status" technique means multiple commands may be sent under
+        # the same status. This condition occurs when, after parsing the current
+        # commands, we see the next byte is NOT a status byte (MSB is low).
+        '__next' / Peek(Int8ub),
+        'command_byte' / IfThenElse(_this.__next & 0x80,
+            Byte * remember_last,
+            Computed(lambda ctx: last_command)
         ),
-        'param1' / Int8ub,
-        'param2' / Int8ub,
+        'command' / If(_this.command_byte, Enum(Computed(_this.command_byte & 0xf0),
+            note_on=COMMAND_NOTE_ON,
+            note_off=COMMAND_NOTE_OFF,
+            aftertouch=COMMAND_AFTERTOUCH,
+            control_mode_change=COMMAND_CONTROL_MODE_CHANGE)),
+        'channel' / If(_this.command_byte, Computed(_this.command_byte & 0x0f)),
+
+        'params' / Switch(_this.command, {
+            'note_on': Struct(
+                'key' / Byte,
+                'velocity' / Byte,
+            ),
+            'note_off': Struct(
+                'key' / Byte,
+                'velocity' / Byte,
+            ),
+            'aftertouch': Struct(
+                'key' / Byte,
+                'touch' / Byte,
+            ),
+            'control_mode_change': Struct(
+                'controller' / Byte,
+                'value' / Byte,
+            ),
+        }, default=Struct(
+            'unknown' / GreedyBytes,
+        ))),
     )),
+)
+
+MIDISystemJournal = Struct(
+    'header' / BitStruct(
+        's' / Flag,
+        'd' / Flag,
+        'v' / Flag,
+        'q' / Flag,
+        'f' / Flag,
+        'x' / Flag,
+        'length' / BitsInteger(10),
+    ),
+
+    # Note from RFC 6295 appendix A1: The "length" field includes
+    # the header bytes.
+    'journal' / Bytes(_this.header.length - 2),
+)
+
+MIDIChapterJournal = Struct(
+    'header' / BitStruct(
+        's' / Flag,
+        'chan' / BitsInteger(4),
+        'h' / Flag,
+        'length' / BitsInteger(10),
+        'p' / Flag,
+        'c' / Flag,
+        'm' / Flag,
+        'w' / Flag,
+        'n' / Flag,
+        'e' / Flag,
+        't' / Flag,
+        'a' / Flag,
+    ),
+
+    # Note from RFC 6295 appendix A1: The "length" field includes
+    # the header bytes.
+    'journal' / Bytes(_this.header.length - 3),
 )
 
 MIDIPacketJournal = Struct(
@@ -80,15 +164,16 @@ MIDIPacketJournal = Struct(
         'a' / Flag,
         'h' / Flag,
         'totchan' / BitsInteger(4),
-        'checkpoint_seqnum' / BitsInteger(12),
     ),
-    'remain' / GreedyBytes,
+    'checkpoint_seqnum' / Int16ub,
+    'system_journal' / If(_this.header.s, MIDISystemJournal),
+    'channel_journal' / If(_this.header.a, MIDIChapterJournal),
 )
 
 MIDIPacket = Struct(
     'header' / MIDIPacketHeader,
     'command' / MIDIPacketCommand,
-    'journal' / Optional(MIDIPacketJournal),
+    'journal' / If(_this.command.flags.j, MIDIPacketJournal),
 )
 
 
