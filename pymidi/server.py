@@ -37,17 +37,17 @@ parser.add_option('-v', '--verbose',
 
 
 def run_server(port=5051, host='0.0.0.0'):
-    logger.info('Control socket on {}:{}'.format(host, port))
+    control_port, data_port = port, port + 1
+    logger.info('Control socket on {}:{}'.format(host, control_port))
     control_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    control_socket.bind((host, port))
-    control_protocol = ControlProtocol(control_socket)
+    control_socket.bind((host, control_port))
 
-    port = port + 1
-
-    logger.info('Data socket on {}:{}'.format(host, port))
+    logger.info('Data socket on {}:{}'.format(host, data_port))
     data_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    data_socket.bind((host, port))
+    data_socket.bind((host, data_port))
+
     data_protocol = DataProtocol(data_socket)
+    control_protocol = ControlProtocol(data_protocol, control_socket)
 
     while True:
         rr, _, _ = select.select([control_socket, data_socket], [], [])

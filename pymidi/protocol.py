@@ -45,6 +45,14 @@ class BaseProtocol(object):
         self.ssrc = ssrc or random.randint(0, 2 ** 32 - 1)
         self.logger = logging.getLogger('pymidi.{}'.format(self.__class__.__name__))
 
+    def _connect_peer(self, name, addr, ssrc):
+        peer = Peer(name=name, addr=addr, ssrc=ssrc)
+        self.peers_by_ssrc[ssrc] = peer
+        return peer
+
+    def _disconnect_peer(self, ssrc):
+        return self.peers_by_ssrc.pop(ssrc)
+
     def sendto(self, message, addr):
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug('tx: {}'.format(binascii.hexlify(message)))
@@ -74,8 +82,7 @@ class BaseProtocol(object):
             if ssrc in self.peers_by_ssrc:
                 self.logger.warning('Ignoring duplicate connection from ssrc {}'.format(ssrc))
                 return
-            peer = Peer(name=packet.name, addr=addr, ssrc=ssrc)
-            self.peers_by_ssrc[ssrc] = peer
+            peer = self._connect_peer(name=packet.name, addr=addr, ssrc=ssrc)
             response = packets.AppleMIDIExchangePacket.build(dict(
                 command=APPLEMIDI_COMMAND_INVITATION_ACCEPTED,
                 protocol_version=2,
@@ -91,14 +98,25 @@ class BaseProtocol(object):
             if ssrc not in self.peers_by_ssrc:
                 self.logger.warning('Ignoring exit from unknown ssrc {}'.format(ssrc))
                 return
-            peer = self.peers_by_ssrc.pop(ssrc)
+            peer = self._disconnect_peer(ssrc)
             self.logger.info('Peer {} exited'.format(peer))
         else:
             self.logger.warning('Ignoring unrecognized command: {}'.format(command))
 
 
 class ControlProtocol(BaseProtocol):
-    pass
+    def __init__(self, data_protocol, *args, **kwargs):
+        super(ControlProtocol, self).__init__(*args, **kwargs)
+        self.data_protocol = data_protocol
+
+    def _disconnect_peer(self, ssrc):
+        """Disconnect from data protocol when disconnecting locally."""
+        peer = super(ControlProtocol, self)._disconnect_peer(ssrc)
+        if peer:
+            self.data_protocol._disconnect_peer(ssrc)
+        return peer
+
+
 
 
 class DataProtocol(BaseProtocol):
@@ -113,9 +131,12 @@ class DataProtocol(BaseProtocol):
 
     def handle_data_message(self, data, addr):
         packet = packets.MIDIPacket.parse(data)
-        self.logger.info(packets.to_string(packet))
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(packet)
+        if packet.header.ssrc not in self.peers_by_ssrc:
+            self.logger.debug('Ignoring message from unknown ssrc={}'.format(packet.header.ssrc))
+            return
+        self.logger.info(packets.to_string(packet))
 
     def handle_timestamp(self, data, addr):
         packet = packets.AppleMIDITimestampPacket.parse(data)
