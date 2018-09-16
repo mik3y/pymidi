@@ -38,20 +38,27 @@ class ProtocolError(Exception):
 
 
 class BaseProtocol(object):
-    def __init__(self, socket, name='pymidi', ssrc=None):
+    def __init__(self, socket, name='pymidi', ssrc=None, connect_cb=None, disconnect_cb=None):
         self.socket = socket
         self.name = name
         self.peers_by_ssrc = {}
         self.ssrc = ssrc or random.randint(0, 2 ** 32 - 1)
+        self.connect_cb = connect_cb
+        self.disconnect_cb = disconnect_cb
         self.logger = logging.getLogger('pymidi.{}'.format(self.__class__.__name__))
 
     def _connect_peer(self, name, addr, ssrc):
         peer = Peer(name=name, addr=addr, ssrc=ssrc)
         self.peers_by_ssrc[ssrc] = peer
+        if self.connect_cb:
+            self.connect_cb(peer)
         return peer
 
     def _disconnect_peer(self, ssrc):
-        return self.peers_by_ssrc.pop(ssrc)
+        peer = self.peers_by_ssrc.pop(ssrc)
+        if peer and self.disconnect_cb:
+            self.disconnect_cb(peer)
+        return peer
 
     def sendto(self, message, addr):
         if self.logger.isEnabledFor(logging.DEBUG):
@@ -117,10 +124,9 @@ class ControlProtocol(BaseProtocol):
         return peer
 
 
-
-
 class DataProtocol(BaseProtocol):
     def __init__(self, *args, **kwargs):
+        self.midi_command_cb = kwargs.pop('midi_command_cb', None)
         super(DataProtocol, self).__init__(*args, **kwargs)
 
     def handle_command_message(self, command, data, addr):
@@ -133,10 +139,12 @@ class DataProtocol(BaseProtocol):
         packet = packets.MIDIPacket.parse(data)
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(packet)
-        if packet.header.ssrc not in self.peers_by_ssrc:
+        peer = self.peers_by_ssrc.get(packet.header.ssrc)
+        if not peer:
             self.logger.debug('Ignoring message from unknown ssrc={}'.format(packet.header.ssrc))
             return
-        self.logger.info(packets.to_string(packet))
+        if self.midi_command_cb:
+            self.midi_command_cb(peer, packet)
 
     def handle_timestamp(self, data, addr):
         packet = packets.AppleMIDITimestampPacket.parse(data)

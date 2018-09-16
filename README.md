@@ -1,6 +1,6 @@
 # pymidi
 
-A python RTP-MIDI / AppleMIDI implementation.
+A python RTP-MIDI / AppleMIDI implementation. You can use this library to build a network attached virtual MIDI device.
 
 ## Developer Setup
 
@@ -38,6 +38,50 @@ $ pushd ~/git/pymidi && python setup.py develop && popd
 ```
 
 This creates a link to `~/git/pymidi` within the environment of `~/git/otherproject`.
+
+## Demo Server
+
+The library includes a simple demo server which prints stuff.
+
+```
+$ python pymidi/server.py
+```
+
+See `--help` for usage.
+
+## Using in Another Project
+
+Most likely you will want to embed a server in another project, and respond to MIDI commands in some application specific way. The demo serve is an example of what you need to do.
+
+First, create a subclass of `server.Handler` to implement your policy:
+
+```py
+from pymidi import server
+
+class MyHandler(server.handler)
+    def on_peer_connected(self, peer):
+        print('Peer connected: {}'.format(peer))
+
+    def on_peer_disconnected(self, peer):
+        print('Peer disconnected: {}'.format(peer))
+
+    def on_midi_commands(self, command_list):
+        for command in command_list:
+            if command.command == 'note_on':
+                key = command.params.key
+                velocity = command.params.velocity
+                print('Someone hit the key {} with velocity {}'.format(key, velocity))
+```
+
+Then install it in a server and start serving:
+
+```
+server = new Server()
+server.add_handler(MyHandler())
+server.serve_forever()
+```
+
+See the [Developer Setup wiki](wiki/Developer-MIDI-Setup) for ways to test with real devices.
 
 ## Project Status
 
