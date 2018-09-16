@@ -45,13 +45,18 @@ What works:
 * Exchange packet parsing
 * Timestamp sync packet parsing
 * Exchange & timestamp sync protocol support
-
-What's left:
 * MIDI message parsing
-* Quite a bit more
 
-## References
+Not (yet) implemented:
+* Journal contents parsing
+* Verification of peers on the data channel
+* Auto-disconnect peers that stop synchronizing clocks
 
-* [RFC 6295: RTP Payload Format for MIDI](https://tools.ietf.org/html/rfc6295)
-* [AppleMIDI Reference Documentation from Apple](https://developer.apple.com/library/archive/documentation/Audio/Conceptual/MIDINetworkDriverProtocol/MIDI/MIDI.html)
-* [RTP-MIDI on Wikipedia](https://en.wikipedia.org/wiki/RTP-MIDI)
+## References and Reading
+
+* Official docs
+  - [RFC 6295: RTP Payload Format for MIDI](https://tools.ietf.org/html/rfc6295)
+  - [AppleMIDI Reference Documentation from Apple](https://developer.apple.com/library/archive/documentation/Audio/Conceptual/MIDINetworkDriverProtocol/MIDI/MIDI.html)
+  - [RTP-MIDI on Wikipedia](https://en.wikipedia.org/wiki/RTP-MIDI)
+* Other helpful docs/sites
+  - [The MIDI Specification](http://midi.teragonaudio.com/tech/midispec.htm)
