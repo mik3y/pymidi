@@ -14,6 +14,14 @@ from construct import If, IfThenElse, GreedyBytes, GreedyRange, VarInt, FixedSiz
 from construct import Switch, Enum, Peek
 from construct import this as _this
 
+COMMAND_PREAMBLE = b'\xff\xff'
+
+# Two-byte RTP-MIDI control commands
+COMMAND_INVITATION = 'IN'
+COMMAND_INVITATION_ACCEPTED = 'OK'
+COMMAND_INVITATION_REJECTED = 'NO'
+COMMAND_TIMESTAMP_SYNC = 'CK'
+COMMAND_EXIT = 'BY'
 
 ExchangePacket = Struct(
     'preamble' / Const(b'\xff\xff'),
@@ -66,6 +74,17 @@ last_command = None
 def remember_last(obj, ctx):
     global last_command
     last_command = obj
+
+
+def midi_packet_to_string(pkt):
+    if not pkt.command.midi_list:
+        return 'EMPTY'
+    command = pkt.command.midi_list[0].command
+    detail = ''
+    if command in ('note_on', 'note_off'):
+        notes = pkt.command.midi_list
+        detail = ', '.join(('{} {}'.format(e.params.key, e.params.velocity) for e in notes))
+    return '{} {}'.format(command, detail)
 
 
 MIDIPacketCommand = Struct(
@@ -175,6 +194,14 @@ MIDIPacket = Struct(
 )
 
 
+class Peer(object):
+    """Holds state about a midi peer."""
+    def __init__(self, addr, ssrc, initialized=False):
+        self.addr = addr
+        self.ssrc = ssrc
+        self.initialized = initialized
+
+
 class ProtocolError(Exception):
     pass
 
@@ -195,19 +222,32 @@ class BaseProtocol(object):
     def handle_message(self, data, addr):
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug('rx: {}'.format(data.encode('hex')))
+
+        if data[0:2] == COMMAND_PREAMBLE:
+            command = data[2:4]
+            self.logger.info('Command: {}'.format(command))
+            self.handle_command_message(command, data, addr)
+        else:
+            self.handle_data_message(data, addr)
+
+    def handle_data_message(self, data, addr):
+        self.logger.warn('Unrecognized datagram, ignoring packet')
+
+    def handle_command_message(self, command, data, addr):
         if not self.initialized:
             self.state_initial(data, addr)
             self.initialized = True
-            return
 
     def state_initial(self, data, addr):
         packet = ExchangePacket.parse(data)
-        logging.debug(packet)
-        if packet.command != 'IN':
-            raise ProtocolError('Unrecognized command: {}'.format(packet.command))
+        if self.logger.isEnabledFor(logging.DEBUG):
+            logging.debug(packet)
+        if packet.command != COMMAND_INVITATION:
+            self.logger.warning('Unrecognized command: {}'.format(packet.command))
+            return
 
         response = ExchangePacket.build(dict(
-            command='OK',
+            command=COMMAND_INVITATION_ACCEPTED,
             protocol_version=2,
             initiator_token=packet.initiator_token,
             ssrc=self.ssrc,
@@ -224,15 +264,17 @@ class DataProtocol(BaseProtocol):
     def __init__(self, *args, **kwargs):
         super(DataProtocol, self).__init__(*args, **kwargs)
 
-    def handle_message(self, data, addr):
-        if data[:2] == b'\xff\xff':
-            command = data[2:4]
-            if command == 'CK':
-                self.handle_timestamp(data, addr)
-            else:
-                super(DataProtocol, self).handle_message(data, addr)
+    def handle_command_message(self, command, data, addr):
+        if command == COMMAND_TIMESTAMP_SYNC:
+            self.handle_timestamp(data, addr)
         else:
-            self.handle_midi_packet(data, addr)
+            super(DataProtocol, self).handle_command_message(command, data, addr)
+
+    def handle_data_message(self, data, addr):
+        packet = MIDIPacket.parse(data)
+        self.logger.info(midi_packet_to_string(packet))
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(packet)
 
     def handle_timestamp(self, data, addr):
         packet = TimestampPacket.parse(data)
@@ -242,7 +284,7 @@ class DataProtocol(BaseProtocol):
         now = int(time.time() * 10000)  # units of 100 microseconds
         if packet.count == 0:
             response = TimestampPacket.build(dict(
-                command='CK',
+                command=COMMAND_TIMESTAMP_SYNC,
                 count=1,
                 ssrc=self.ssrc,
                 timestamp_1=packet.timestamp_1,
@@ -253,8 +295,3 @@ class DataProtocol(BaseProtocol):
         elif packet.count == 2:
             offset_estimate = ((packet.timestamp_3 + packet.timestamp_1) / 2) - packet.timestamp_2
             self.logger.debug('offset estimate: {}'.format(offset_estimate))
-
-    def handle_midi_packet(self, data, addr):
-        packet = MIDIPacket.parse(data)
-        if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug(packet)
