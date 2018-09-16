@@ -4,7 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from unittest import TestCase
-from pymidi import protocol
+from pymidi import packets
 from pymidi.utils import h2b
 
 EXCHANGE_PACKET = h2b('ffff494e000000026633487347d810966d626f6f6b2d73657373696f6e00')
@@ -28,7 +28,7 @@ MULTI_MIDI_PACKET = h2b(
 
 class TestPackets(TestCase):
     def test_exchange_packet(self):
-        pkt = protocol.ExchangePacket.parse(EXCHANGE_PACKET)
+        pkt = packets.AppleMIDIExchangePacket.parse(EXCHANGE_PACKET)
         self.assertEqual(b'\xff\xff', pkt.preamble)
         self.assertEqual('IN', pkt.command)
         self.assertEqual(2, pkt.protocol_version)
@@ -37,7 +37,7 @@ class TestPackets(TestCase):
         self.assertEqual('mbook-session', pkt.name)
 
     def test_timestamp_packet(self):
-        pkt = protocol.TimestampPacket.parse(TIMESTAMP_PACKET)
+        pkt = packets.AppleMIDITimestampPacket.parse(TIMESTAMP_PACKET)
         self.assertEqual(b'\xff\xff', pkt.preamble)
         self.assertEqual('CK', pkt.command)
         self.assertEqual(1205342358, pkt.ssrc)
@@ -47,7 +47,7 @@ class TestPackets(TestCase):
         self.assertEqual(1140859528, pkt.timestamp_3)
 
     def test_single_midi_packet(self):
-        pkt = protocol.MIDIPacket.parse(SINGLE_MIDI_PACKET)
+        pkt = packets.MIDIPacket.parse(SINGLE_MIDI_PACKET)
         print(pkt)
         self.assert_(pkt.header, 'Expected a header')
         self.assertEqual(2, pkt.header.rtp_header.flags.v)
@@ -76,7 +76,7 @@ class TestPackets(TestCase):
         self.assert_(pkt.journal, 'Expected journal')
 
     def test_multi_midi_packet(self):
-        pkt = protocol.MIDIPacket.parse(MULTI_MIDI_PACKET)
+        pkt = packets.MIDIPacket.parse(MULTI_MIDI_PACKET)
         self.assert_(pkt.header, 'Expected a header')
         self.assertEqual(2, pkt.header.rtp_header.flags.v)
         self.assertEqual(False, pkt.header.rtp_header.flags.p)
@@ -109,6 +109,6 @@ class TestPackets(TestCase):
         self.assert_(pkt.journal, 'Expected journal')
 
     def test_packet_with_no_journal(self):
-        pkt = protocol.MIDIPacket.parse(h2b('806142a0550d8a5a47d8109603903446'))
+        pkt = packets.MIDIPacket.parse(h2b('806142a0550d8a5a47d8109603903446'))
         self.assertEqual(False, pkt.command.flags.j, 'Expected J bit to be clear')
         self.assert_(not pkt.journal, 'Expected no journal')
