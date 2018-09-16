@@ -2,6 +2,20 @@
 
 A python RTP-MIDI / AppleMIDI implementation. You can use this library to build a network attached virtual MIDI device.
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**
+
+- [Developer Setup](#developer-setup)
+  - [Running tests](#running-tests)
+  - [Developing against something else](#developing-against-something-else)
+- [Demo Server](#demo-server)
+- [Using in Another Project](#using-in-another-project)
+- [Project Status](#project-status)
+- [References and Reading](#references-and-reading)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## Developer Setup
 
 Set up your workspace with the very excellent [Pipenv](https://pipenv.readthedocs.io/en/latest/):
