@@ -23,10 +23,13 @@ APPLEMIDI_COMMAND_EXIT = 'BY'
 
 class Peer(object):
     """Holds state about a midi peer."""
-    def __init__(self, addr, ssrc, initialized=False):
+    def __init__(self, name, addr, ssrc):
+        self.name = name
         self.addr = addr
         self.ssrc = ssrc
-        self.initialized = initialized
+
+    def __str__(self):
+        return '{} (ssrc={}, addr={})'.format(self.name, self.ssrc, self.addr)
 
 
 class ProtocolError(Exception):
@@ -37,7 +40,7 @@ class BaseProtocol(object):
     def __init__(self, socket, name='pymidi', ssrc=None):
         self.socket = socket
         self.name = name
-        self.initialized = False
+        self.peers_by_ssrc = {}
         self.ssrc = ssrc or random.randint(0, 2 ** 32 - 1)
         self.logger = logging.getLogger('pymidi.{}'.format(self.__class__.__name__))
 
@@ -58,29 +61,36 @@ class BaseProtocol(object):
             self.handle_data_message(data, addr)
 
     def handle_data_message(self, data, addr):
-        self.logger.warn('Unrecognized datagram, ignoring packet')
+        pass
 
     def handle_command_message(self, command, data, addr):
-        if not self.initialized:
-            self.state_initial(data, addr)
-            self.initialized = True
-
-    def state_initial(self, data, addr):
-        packet = packets.AppleMIDIExchangePacket.parse(data)
-        if self.logger.isEnabledFor(logging.DEBUG):
-            logging.debug(packet)
-        if packet.command != APPLEMIDI_COMMAND_INVITATION:
-            self.logger.warning('Unrecognized command: {}'.format(packet.command))
-            return
-
-        response = packets.AppleMIDIExchangePacket.build(dict(
-            command=APPLEMIDI_COMMAND_INVITATION_ACCEPTED,
-            protocol_version=2,
-            initiator_token=packet.initiator_token,
-            ssrc=self.ssrc,
-            name=self.name,
-        ))
-        self.sendto(response, addr)
+        if command == APPLEMIDI_COMMAND_INVITATION:
+            packet = packets.AppleMIDIExchangePacket.parse(data)
+            ssrc = packet.ssrc
+            if ssrc in self.peers_by_ssrc:
+                self.logger.warning('Ignoring duplicate connection from ssrc {}'.format(ssrc))
+                return
+            peer = Peer(name=packet.name, addr=addr, ssrc=ssrc)
+            self.peers_by_ssrc[ssrc] = peer
+            response = packets.AppleMIDIExchangePacket.build(dict(
+                command=APPLEMIDI_COMMAND_INVITATION_ACCEPTED,
+                protocol_version=2,
+                initiator_token=packet.initiator_token,
+                ssrc=self.ssrc,
+                name=self.name,
+            ))
+            self.sendto(response, addr)
+            self.logger.info('Accepted connection from {}'.format(peer))
+        elif command == APPLEMIDI_COMMAND_EXIT:
+            packet = packets.AppleMIDIExchangePacket.parse(data)
+            ssrc = packet.ssrc
+            if ssrc not in self.peers_by_ssrc:
+                self.logger.warning('Ignoring exit from unknown ssrc {}'.format(ssrc))
+                return
+            peer = self.peers_by_ssrc.pop(ssrc)
+            self.logger.info('Peer {} exited'.format(peer))
+        else:
+            self.logger.warning('Ignoring unrecognized command: {}'.format(command))
 
 
 class ControlProtocol(BaseProtocol):
@@ -105,8 +115,9 @@ class DataProtocol(BaseProtocol):
 
     def handle_timestamp(self, data, addr):
         packet = packets.AppleMIDITimestampPacket.parse(data)
-        logging.debug(packet)
         response = None
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(packet)
 
         now = int(time.time() * 10000)  # units of 100 microseconds
         if packet.count == 0:
