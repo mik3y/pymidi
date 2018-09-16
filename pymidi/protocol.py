@@ -14,8 +14,6 @@ from construct import If, IfThenElse, GreedyBytes, GreedyRange, VarInt, FixedSiz
 from construct import Switch, Enum, Peek
 from construct import this as _this
 
-logger = logging.getLogger('pymidi.protocol')
-
 
 ExchangePacket = Struct(
     'preamble' / Const(b'\xff\xff'),
@@ -187,9 +185,16 @@ class BaseProtocol(object):
         self.name = name
         self.initialized = False
         self.ssrc = ssrc or random.randint(0, 2 ** 32 - 1)
-        self.logger = logging.getLogger('midi:{}'.format(self.__class__.__name__))
+        self.logger = logging.getLogger('pymidi.{}'.format(self.__class__.__name__))
+
+    def sendto(self, message, addr):
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug('tx: {}'.format(binascii.hexlify(message)))
+        self.socket.sendto(message, addr)
 
     def handle_message(self, data, addr):
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug('rx: {}'.format(data.encode('hex')))
         if not self.initialized:
             self.state_initial(data, addr)
             self.initialized = True
@@ -208,8 +213,7 @@ class BaseProtocol(object):
             ssrc=self.ssrc,
             name=self.name,
         ))
-        logging.debug('>> {}'.format(binascii.hexlify(response)))
-        self.socket.sendto(response, addr)
+        self.sendto(response, addr)
 
 
 class ControlProtocol(BaseProtocol):
@@ -245,12 +249,12 @@ class DataProtocol(BaseProtocol):
                 timestamp_2=now,
                 timestamp_3=0,
             ))
-            logging.debug('>> {}'.format(binascii.hexlify(response)))
-            self.socket.sendto(response, addr)
+            self.sendto(response, addr)
         elif packet.count == 2:
             offset_estimate = ((packet.timestamp_3 + packet.timestamp_1) / 2) - packet.timestamp_2
-            logging.debug('offset estimate: {}'.format(offset_estimate))
+            self.logger.debug('offset estimate: {}'.format(offset_estimate))
 
     def handle_midi_packet(self, data, addr):
         packet = MIDIPacket.parse(data)
-        logging.debug(packet)
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(packet)

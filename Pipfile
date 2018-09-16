@@ -9,6 +9,7 @@ name = "pypi"
 [dev-packages]
 nose = "*"
 "flake8" = "*"
+coloredlogs = "*"
 
 [requires]
 python_version = "2.7"
