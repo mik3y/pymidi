@@ -9,6 +9,7 @@ import random
 import time
 
 from pymidi import packets
+from construct import ConstructError
 
 # Command messages are preceded with this sequence.
 APPLEMIDI_PREAMBLE = b'\xff\xff'
@@ -53,12 +54,15 @@ class BaseProtocol(object):
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug('rx: {}'.format(data.encode('hex')))
 
-        if data[0:2] == APPLEMIDI_PREAMBLE:
-            command = data[2:4]
-            self.logger.info('Command: {}'.format(command))
-            self.handle_command_message(command, data, addr)
-        else:
-            self.handle_data_message(data, addr)
+        try:
+            if data[0:2] == APPLEMIDI_PREAMBLE:
+                command = data[2:4]
+                self.logger.info('Command: {}'.format(command))
+                self.handle_command_message(command, data, addr)
+            else:
+                self.handle_data_message(data, addr)
+        except ConstructError as e:
+            self.logger.warning('Bug or malformed packet, ignoring: {}'.format(e))
 
     def handle_data_message(self, data, addr):
         pass
