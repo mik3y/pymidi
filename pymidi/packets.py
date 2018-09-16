@@ -18,14 +18,25 @@ COMMAND_CONTROL_MODE_CHANGE = 0xB0
 
 def to_string(pkt):
     """Pretty-prints a packet."""
-    if not pkt.command.midi_list:
-        return 'EMPTY'
-    command = pkt.command.midi_list[0].command
+    name = pkt._name
     detail = ''
-    if command in ('note_on', 'note_off'):
-        notes = pkt.command.midi_list
-        detail = ', '.join(('{} {}'.format(e.params.key, e.params.velocity) for e in notes))
-    return '{} {}'.format(command, detail)
+
+    if name == 'AppleMIDIExchangePacket':
+        detail = '[command={} ssrc={} name={}]'.format(pkt.command, pkt.ssrc, pkt.name)
+    elif name == 'MIDIPacket':
+        items = []
+        for entry in pkt.command.midi_list:
+            command = entry.command
+            if command in ('note_on', 'note_off'):
+                items.append('{} {} {}'.format(command, entry.params.key, entry.params.velocity))
+            elif command == 'control_mode_change':
+                items.append('{} {} {}'.format(
+                    command, entry.params.controller, entry.params.value))
+            else:
+                items.append(command)
+        detail = ' '.join(('[{}]'.format(i) for i in items))
+
+    return '{} {}'.format(name, detail)
 
 
 def remember_last(obj, ctx):
@@ -37,6 +48,7 @@ def remember_last(obj, ctx):
 
 
 AppleMIDIExchangePacket = Struct(
+    '_name' / Computed('AppleMIDIExchangePacket'),
     'preamble' / Const(b'\xff\xff'),
     'command' / PaddedString(2, 'ascii'),
     'protocol_version' / Int32ub,
@@ -46,6 +58,7 @@ AppleMIDIExchangePacket = Struct(
 )
 
 AppleMIDITimestampPacket = Struct(
+    '_name' / Computed('AppleMIDITimestampPacket'),
     'preamble' / Const(b'\xff\xff'),
     'command' / PaddedString(2, 'ascii'),
     'ssrc' / Int32ub,
@@ -57,6 +70,7 @@ AppleMIDITimestampPacket = Struct(
 )
 
 MIDIPacketHeader = Struct(
+    '_name' / Computed('MIDIPacketHeader'),
     'rtp_header' / Struct(
         'flags' / Bitwise(Struct(
             'v' / BitsInteger(2),  # always 0x2
@@ -73,6 +87,7 @@ MIDIPacketHeader = Struct(
 )
 
 MIDIPacketCommand = Struct(
+    '_name' / Computed('MIDIPacketCommand'),
     'flags' / BitStruct(
         'b' / Flag,
         'j' / Flag,
@@ -127,6 +142,7 @@ MIDIPacketCommand = Struct(
 )
 
 MIDISystemJournal = Struct(
+    '_name' / Computed('MIDISystemJournal'),
     'header' / BitStruct(
         's' / Flag,
         'd' / Flag,
@@ -143,6 +159,7 @@ MIDISystemJournal = Struct(
 )
 
 MIDIChapterJournal = Struct(
+    '_name' / Computed('MIDIChapterJournal'),
     'header' / BitStruct(
         's' / Flag,
         'chan' / BitsInteger(4),
@@ -164,6 +181,7 @@ MIDIChapterJournal = Struct(
 )
 
 MIDIPacketJournal = Struct(
+    '_name' / Computed('MIDIPacketJournal'),
     'header' / BitStruct(
         's' / Flag,
         'y' / Flag,
@@ -177,6 +195,7 @@ MIDIPacketJournal = Struct(
 )
 
 MIDIPacket = Struct(
+    '_name' / Computed('MIDIPacket'),
     'header' / MIDIPacketHeader,
     'command' / MIDIPacketCommand,
     'journal' / If(_this.command.flags.j, MIDIPacketJournal),

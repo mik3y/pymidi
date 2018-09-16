@@ -25,6 +25,15 @@ MULTI_MIDI_PACKET = h2b(
     '8061429a51d2dc8747d8109646903e310a403b21427c00090881673c250d50c8060880440e'
 )
 
+# A controller/mode change packet
+CONTROL_MODE_CHANGE_PACKET = h2b('80614ba55944067e47d8109643b06c00204ba0000948006c7f807708')
+
+# An ApplieMIDI invitation packet
+APPLEMIDI_INVITATION_PACKET = h2b('ffff494e000000020507236747d810966d626f6f6b2d73657373696f6e00')
+
+# An AppleMIDI exit packet
+APPLEMIDI_EXIT_PACKET = h2b('ffff4259000000020000000047d81096')
+
 
 class TestPackets(TestCase):
     def test_exchange_packet(self):
@@ -112,3 +121,25 @@ class TestPackets(TestCase):
         pkt = packets.MIDIPacket.parse(h2b('806142a0550d8a5a47d8109603903446'))
         self.assertEqual(False, pkt.command.flags.j, 'Expected J bit to be clear')
         self.assert_(not pkt.journal, 'Expected no journal')
+
+    def test_to_string(self):
+        pkt = packets.MIDIPacket.parse(SINGLE_MIDI_PACKET)
+        strval = packets.to_string(pkt)
+        self.assertEqual('MIDIPacket [note_on 48 38]', strval)
+
+        pkt = packets.MIDIPacket.parse(MULTI_MIDI_PACKET)
+        strval = packets.to_string(pkt)
+        self.assertEqual('MIDIPacket [note_on 62 49] [note_on 64 59]', strval)
+
+        pkt = packets.MIDIPacket.parse(CONTROL_MODE_CHANGE_PACKET)
+        strval = packets.to_string(pkt)
+        self.assertEqual('MIDIPacket [control_mode_change 108 0]', strval)
+
+        pkt = packets.AppleMIDIExchangePacket.parse(APPLEMIDI_INVITATION_PACKET)
+        strval = packets.to_string(pkt)
+        self.assertEqual('AppleMIDIExchangePacket [command=IN ssrc=1205342358 name=mbook-session]',
+            strval)
+
+        pkt = packets.AppleMIDIExchangePacket.parse(APPLEMIDI_EXIT_PACKET)
+        strval = packets.to_string(pkt)
+        self.assertEqual('AppleMIDIExchangePacket [command=BY ssrc=1205342358 name=None]', strval)
