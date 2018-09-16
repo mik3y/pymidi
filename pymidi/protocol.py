@@ -65,15 +65,12 @@ COMMAND_AFTERTOUCH = 0xA0
 COMMAND_CONTROL_MODE_CHANGE = 0xB0
 
 
-# Global that stores the last-seen status, for running status support.
-# TODO(mikey): This *should* be possible without any state, by peeking
-# at the struct under construction; haven't figured it out.
-last_command = None
-
-
 def remember_last(obj, ctx):
-    global last_command
-    last_command = obj
+    """Stores the last-seen command byte in the parsing context.
+
+    Bit of a hack to make running status support work.
+    """
+    setattr(ctx._root, '_last_command_byte', obj)
 
 
 def midi_packet_to_string(pkt):
@@ -102,10 +99,14 @@ MIDIPacketCommand = Struct(
         # The "running status" technique means multiple commands may be sent under
         # the same status. This condition occurs when, after parsing the current
         # commands, we see the next byte is NOT a status byte (MSB is low).
+        #
+        # Below, this is accomplished by storing the most recent status byte
+        # on the global context with the `* remember_last` macro; then using it
+        # on the `else` branch of the `command_byte` selection.
         '__next' / Peek(Int8ub),
         'command_byte' / IfThenElse(_this.__next & 0x80,
             Byte * remember_last,
-            Computed(lambda ctx: last_command)
+            Computed(lambda ctx: ctx._root._last_command_byte)
         ),
         'command' / If(_this.command_byte, Enum(Computed(_this.command_byte & 0xf0),
             note_on=COMMAND_NOTE_ON,
