@@ -72,7 +72,7 @@ class BaseProtocol(object):
         try:
             if data[0:2] == APPLEMIDI_PREAMBLE:
                 command = data[2:4]
-                self.logger.info('Command: {}'.format(command))
+                self.logger.debug('Command: {}'.format(command))
                 self.handle_command_message(command, data, addr)
             else:
                 self.handle_data_message(data, addr)
