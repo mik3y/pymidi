@@ -9,7 +9,6 @@ import select
 import socket
 import sys
 
-from pymidi import packets
 from pymidi.protocol import DataProtocol
 from pymidi.protocol import ControlProtocol
 
@@ -71,7 +70,6 @@ class Server(object):
             handler.on_peer_disconnected(peer)
 
     def _midi_command_cb(self, peer, midi_packet):
-        logger.info(packets.to_string(midi_packet))
         commands = midi_packet.command.midi_list
         for handler in self.handlers:
             handler.on_midi_commands(peer, commands)

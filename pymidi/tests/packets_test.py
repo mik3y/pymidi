@@ -79,7 +79,7 @@ class TestPackets(TestCase):
         command = pkt.command.midi_list[0]
         self.assertEqual(0x90, command.command_byte)
         self.assertEqual('note_on', command.command)
-        self.assertEqual(48, command.params.key)
+        self.assertEqual('C3', command.params.key)
         self.assert_(38, command.params.velocity)
 
         self.assert_(pkt.journal, 'Expected journal')
@@ -106,13 +106,13 @@ class TestPackets(TestCase):
         command = pkt.command.midi_list[0]
         self.assertEqual(0x90, command.command_byte)
         self.assertEqual('note_on', command.command)
-        self.assertEqual(0x3e, command.params.key)
+        self.assertEqual('D4', command.params.key)
         self.assert_(38, command.params.velocity)
 
         command = pkt.command.midi_list[1]
         self.assertEqual(0x90, command.command_byte)
         self.assertEqual('note_on', command.command)
-        self.assertEqual(0x40, command.params.key)
+        self.assertEqual('E4', command.params.key)
         self.assert_(38, command.params.velocity)
 
         self.assert_(pkt.journal, 'Expected journal')
@@ -125,11 +125,11 @@ class TestPackets(TestCase):
     def test_to_string(self):
         pkt = packets.MIDIPacket.parse(SINGLE_MIDI_PACKET)
         strval = packets.to_string(pkt)
-        self.assertEqual('MIDIPacket [note_on 48 38]', strval)
+        self.assertEqual('MIDIPacket [note_on C3 38]', strval)
 
         pkt = packets.MIDIPacket.parse(MULTI_MIDI_PACKET)
         strval = packets.to_string(pkt)
-        self.assertEqual('MIDIPacket [note_on 62 49] [note_on 64 59]', strval)
+        self.assertEqual('MIDIPacket [note_on D4 49] [note_on E4 59]', strval)
 
         pkt = packets.MIDIPacket.parse(CONTROL_MODE_CHANGE_PACKET)
         strval = packets.to_string(pkt)
