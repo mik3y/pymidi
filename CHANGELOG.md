@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.3.0 (2018-10-20)
+
+* Improvement: Server instances can bind to ipv6 addresses.
+
 ## v0.2.1 (2018-09-16)
 
 * Repackaged release, no functional changes.
