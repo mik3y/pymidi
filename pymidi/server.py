@@ -29,6 +29,10 @@ parser.add_option('-b', '--bind_host',
     dest='host',
     default='0.0.0.0',
     help='bind to this address')
+parser.add_option('-B', '--bind_ipv6_host',
+    dest='ipv6_host',
+    default='::',
+    help='bind to this ipv6 address')
 parser.add_option('-v', '--verbose',
     action='store_true',
     dest='verbose',
@@ -48,10 +52,12 @@ class Handler(object):
 
 
 class Server(object):
-    def __init__(self, host='0.0.0.0', port=5051):
+    def __init__(self, host='0.0.0.0', ipv6_host='::', port=5051):
         self.host = host
+        self.ipv6_host = ipv6_host
         self.port = port
         self.handlers = set()
+        self.protocol_handlers = {}
 
     def add_handler(self, handler):
         assert isinstance(handler, Handler)
@@ -74,31 +80,41 @@ class Server(object):
         for handler in self.handlers:
             handler.on_midi_commands(peer, commands)
 
-    def serve_forever(self):
-        control_port, data_port = self.port, self.port + 1
-        logger.info('Control socket on {}:{}'.format(self.host, control_port))
-        control_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        control_socket.bind((self.host, control_port))
-
-        logger.info('Data socket on {}:{}'.format(self.host, data_port))
-        data_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        data_socket.bind((self.host, data_port))
-
-        data_protocol = DataProtocol(data_socket, midi_command_cb=self._midi_command_cb)
-        control_protocol = ControlProtocol(
-            data_protocol,
-            control_socket,
+    def _build_control_protocol(self, host, family):
+        logger.info('Control socket on {}:{}'.format(host, self.port))
+        control_socket = socket.socket(family, socket.SOCK_DGRAM)
+        control_socket.bind((host, self.port))
+        return ControlProtocol(
+            socket=control_socket,
             connect_cb=self._peer_connected_cb,
             disconnect_cb=self._peer_disconnected_cb)
 
+    def _build_data_protocol(self, host, family):
+        logger.info('Data socket on {}:{}'.format(host, self.port + 1))
+        data_socket = socket.socket(family, socket.SOCK_DGRAM)
+        data_socket.bind((host, self.port + 1))
+        return DataProtocol(data_socket, midi_command_cb=self._midi_command_cb)
+
+    def _init_protocols(self):
+        for host, family in ((self.host, socket.AF_INET), (self.ipv6_host, socket.AF_INET6)):
+            data_protocol = self._build_data_protocol(host, family)
+            ctrl_protocol = self._build_control_protocol(host, family)
+            ctrl_protocol.associate_data_protocol(data_protocol)
+
+            self.protocol_handlers[data_protocol.socket] = data_protocol
+            self.protocol_handlers[ctrl_protocol.socket] = ctrl_protocol
+
+    def serve_forever(self):
+        self._init_protocols()
+
+        sockets = [socket for socket in self.protocol_handlers.keys()]
         while True:
-            rr, _, _ = select.select([control_socket, data_socket], [], [])
+            rr, _, _ = select.select(sockets, [], [])
             for s in rr:
                 buffer, addr = s.recvfrom(1024)
-                if s is control_socket:
-                    control_protocol.handle_message(buffer, addr)
-                elif s is data_socket:
-                    data_protocol.handle_message(buffer, addr)
+                if s in self.protocol_handlers:
+                    proto = self.protocol_handlers[s]
+                    proto.handle_message(buffer, addr)
                 else:
                     raise ValueError('Unknown socket.')
 
@@ -134,7 +150,7 @@ if __name__ == '__main__':
                     velocity = command.params.velocity
                     print('Someone hit the key {} with velocity {}'.format(key, velocity))
 
-    server = Server(port=options.port, host=options.host)
+    server = Server(port=options.port, host=options.host, ipv6_host=options.ipv6_host)
     server.add_handler(ExampleHandler())
 
     try:
