@@ -112,8 +112,11 @@ class BaseProtocol(object):
 
 
 class ControlProtocol(BaseProtocol):
-    def __init__(self, data_protocol, *args, **kwargs):
+    def __init__(self, data_protocol=None, *args, **kwargs):
         super(ControlProtocol, self).__init__(*args, **kwargs)
+        self.data_protocol = data_protocol
+
+    def associate_data_protocol(self, data_protocol):
         self.data_protocol = data_protocol
 
     def _disconnect_peer(self, ssrc):
