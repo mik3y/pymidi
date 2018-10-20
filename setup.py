@@ -5,7 +5,7 @@ with open('README.md') as f:
 
 setup(
     name='pymidi',
-    version='0.2.1',
+    version='0.3.0',
     license='MIT',
     url='https://github.com/mik3y/pymidi',
     author='mike wakerly',
