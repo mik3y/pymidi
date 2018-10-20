@@ -80,11 +80,7 @@ class Server(object):
         for handler in self.handlers:
             handler.on_midi_commands(peer, commands)
 
-    def _build_control_protocol(self, host):
-        family = socket.AF_INET
-        if '::' in host:
-            family = socket.AF_INET6
-
+    def _build_control_protocol(self, host, family):
         logger.info('Control socket on {}:{}'.format(host, self.port))
         control_socket = socket.socket(family, socket.SOCK_DGRAM)
         control_socket.bind((host, self.port))
@@ -93,20 +89,16 @@ class Server(object):
             connect_cb=self._peer_connected_cb,
             disconnect_cb=self._peer_disconnected_cb)
 
-    def _build_data_protocol(self, host):
-        family = socket.AF_INET
-        if '::' in host:
-            family = socket.AF_INET6
-
-        logger.info('Data socket on {}:{}'.format(host, self.port+1))
+    def _build_data_protocol(self, host, family):
+        logger.info('Data socket on {}:{}'.format(host, self.port + 1))
         data_socket = socket.socket(family, socket.SOCK_DGRAM)
-        data_socket.bind((host, self.port+1))
+        data_socket.bind((host, self.port + 1))
         return DataProtocol(data_socket, midi_command_cb=self._midi_command_cb)
 
     def _init_protocols(self):
-        for host in self.host, self.ipv6_host:
-            data_protocol = self._build_data_protocol(host)
-            ctrl_protocol = self._build_control_protocol(host)
+        for host, family in ((self.host, socket.AF_INET), (self.ipv6_host, socket.AF_INET6)):
+            data_protocol = self._build_data_protocol(host, family)
+            ctrl_protocol = self._build_control_protocol(host, family)
             ctrl_protocol.associate_data_protocol(data_protocol)
 
             self.protocol_handlers[data_protocol.socket] = data_protocol
