@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
+from builtins import bytes
 
 from optparse import OptionParser
 import logging
@@ -112,6 +113,7 @@ class Server(object):
             rr, _, _ = select.select(sockets, [], [])
             for s in rr:
                 buffer, addr = s.recvfrom(1024)
+                buffer = bytes(buffer)
                 if s in self.protocol_handlers:
                     proto = self.protocol_handlers[s]
                     proto.handle_message(buffer, addr)

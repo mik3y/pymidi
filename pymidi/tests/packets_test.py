@@ -39,7 +39,7 @@ class TestPackets(TestCase):
     def test_exchange_packet(self):
         pkt = packets.AppleMIDIExchangePacket.parse(EXCHANGE_PACKET)
         self.assertEqual(b'\xff\xff', pkt.preamble)
-        self.assertEqual('IN', pkt.command)
+        self.assertEqual(b'IN', pkt.command)
         self.assertEqual(2, pkt.protocol_version)
         self.assertEqual(1714636915, pkt.initiator_token)
         self.assertEqual(1205342358, pkt.ssrc)
@@ -48,7 +48,7 @@ class TestPackets(TestCase):
     def test_timestamp_packet(self):
         pkt = packets.AppleMIDITimestampPacket.parse(TIMESTAMP_PACKET)
         self.assertEqual(b'\xff\xff', pkt.preamble)
-        self.assertEqual('CK', pkt.command)
+        self.assertEqual(b'CK', pkt.command)
         self.assertEqual(1205342358, pkt.ssrc)
         self.assertEqual(2, pkt.count)
         self.assertEqual(1140859518, pkt.timestamp_1)
@@ -137,9 +137,9 @@ class TestPackets(TestCase):
 
         pkt = packets.AppleMIDIExchangePacket.parse(APPLEMIDI_INVITATION_PACKET)
         strval = packets.to_string(pkt)
-        self.assertEqual('AppleMIDIExchangePacket [command=IN ssrc=1205342358 name=mbook-session]',
+        self.assertEqual('AppleMIDIExchangePacket [command=b\'IN\' ssrc=1205342358 name=mbook-session]',
             strval)
 
         pkt = packets.AppleMIDIExchangePacket.parse(APPLEMIDI_EXIT_PACKET)
         strval = packets.to_string(pkt)
-        self.assertEqual('AppleMIDIExchangePacket [command=BY ssrc=1205342358 name=None]', strval)
+        self.assertEqual('AppleMIDIExchangePacket [command=b\'BY\' ssrc=1205342358 name=None]', strval)

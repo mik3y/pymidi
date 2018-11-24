@@ -15,11 +15,11 @@ from construct import ConstructError
 APPLEMIDI_PREAMBLE = b'\xff\xff'
 
 # Two-byte RTP-MIDI control commands
-APPLEMIDI_COMMAND_INVITATION = 'IN'
-APPLEMIDI_COMMAND_INVITATION_ACCEPTED = 'OK'
-APPLEMIDI_COMMAND_INVITATION_REJECTED = 'NO'
-APPLEMIDI_COMMAND_TIMESTAMP_SYNC = 'CK'
-APPLEMIDI_COMMAND_EXIT = 'BY'
+APPLEMIDI_COMMAND_INVITATION = b'IN'
+APPLEMIDI_COMMAND_INVITATION_ACCEPTED = b'OK'
+APPLEMIDI_COMMAND_INVITATION_REJECTED = b'NO'
+APPLEMIDI_COMMAND_TIMESTAMP_SYNC = b'CK'
+APPLEMIDI_COMMAND_EXIT = b'BY'
 
 
 class Peer(object):
@@ -55,7 +55,7 @@ class BaseProtocol(object):
         return peer
 
     def _disconnect_peer(self, ssrc):
-        peer = self.peers_by_ssrc.pop(ssrc)
+        peer = self.peers_by_ssrc.pop(ssrc) # TODO(mikey): fix possible KeyError
         if peer and self.disconnect_cb:
             self.disconnect_cb(peer)
         return peer
@@ -67,17 +67,17 @@ class BaseProtocol(object):
 
     def handle_message(self, data, addr):
         if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug('rx: {}'.format(data.encode('hex')))
+            self.logger.debug('rx: {}'.format(data.hex()))
 
         try:
             if data[0:2] == APPLEMIDI_PREAMBLE:
                 command = data[2:4]
-                self.logger.debug('Command: {}'.format(command))
+                self.logger.debug('Command: {}'.format(command.hex()))
                 self.handle_command_message(command, data, addr)
             else:
                 self.handle_data_message(data, addr)
         except ConstructError as e:
-            self.logger.warning('Bug or malformed packet, ignoring: {}'.format(e))
+            self.logger.exception('Bug or malformed packet, ignoring')
 
     def handle_data_message(self, data, addr):
         pass

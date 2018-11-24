@@ -1,5 +1,9 @@
 # Changelog
 
+## Current Version (in development)
+
+* Improvement: Python 3 support.
+
 ## v0.3.0 (2018-10-20)
 
 * Improvement: Server instances can bind to ipv6 addresses.

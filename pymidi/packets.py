@@ -50,7 +50,7 @@ def remember_last(obj, ctx):
 AppleMIDIExchangePacket = Struct(
     '_name' / Computed('AppleMIDIExchangePacket'),
     'preamble' / Const(b'\xff\xff'),
-    'command' / PaddedString(2, 'ascii'),
+    'command' / Bytes(2),
     'protocol_version' / Int32ub,
     'initiator_token' / Int32ub,
     'ssrc' / Int32ub,
@@ -60,7 +60,7 @@ AppleMIDIExchangePacket = Struct(
 AppleMIDITimestampPacket = Struct(
     '_name' / Computed('AppleMIDITimestampPacket'),
     'preamble' / Const(b'\xff\xff'),
-    'command' / PaddedString(2, 'ascii'),
+    'command' / Bytes(2),
     'ssrc' / Int32ub,
     'count' / Int8ub,
     'padding' / Padding(3),
