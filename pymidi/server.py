@@ -12,6 +12,7 @@ import sys
 
 from pymidi.protocol import DataProtocol
 from pymidi.protocol import ControlProtocol
+from pymidi import utils
 
 try:
     import coloredlogs
@@ -20,20 +21,14 @@ except ImportError:
 
 logger = logging.getLogger('pymidi.server')
 
+DEFAULT_BIND_ADDR = '0.0.0.0:5051'
+
 parser = OptionParser()
-parser.add_option('-p', '--port',
-    type='int',
-    dest='port',
-    default=5051,
-    help='server command port; port + 1 will also be used')
-parser.add_option('-b', '--bind_host',
-    dest='host',
-    default='0.0.0.0',
-    help='bind to this address')
-parser.add_option('-B', '--bind_ipv6_host',
-    dest='ipv6_host',
-    default='::',
-    help='bind to this ipv6 address')
+parser.add_option('-b', '--bind_addr',
+    dest='bind_addrs',
+    action='append',
+    default=None,
+    help='<ip>:<port> for listening; may give multiple times; default {}'.format(DEFAULT_BIND_ADDR))
 parser.add_option('-v', '--verbose',
     action='store_true',
     dest='verbose',
@@ -53,12 +48,33 @@ class Handler(object):
 
 
 class Server(object):
-    def __init__(self, host='0.0.0.0', ipv6_host='::', port=5051):
-        self.host = host
-        self.ipv6_host = ipv6_host
-        self.port = port
+    def __init__(self, bind_addrs):
+        """Creates a new Server instance.
+
+        `bind_addrs` should be an iterable of 1 or more addresses to bind to,
+        each a 2-tuple of (ip, port). Socket family will be automatically
+        detected from the IP address.
+        """
+        if not bind_addrs:
+            raise ValueError('Must provide at least one bind address.')
+        map(utils.validate_addr, bind_addrs)
+        self.bind_addrs = bind_addrs
         self.handlers = set()
-        self.protocol_handlers = {}
+
+        # Maps sockets to their protocol handlers.
+        self.socket_map = {}
+
+    @classmethod
+    def from_bind_addrs(cls, hosts):
+        """Convenience method to construct an instance from a string."""
+        bind_addrs = set()
+        for host in hosts:
+            parts = host.split(':')
+            name = ':'.join(parts[:-1])
+            port = int(parts[-1])
+            addr = (name, port)
+            bind_addrs.add(addr)
+        return cls(bind_addrs)
 
     def add_handler(self, handler):
         assert isinstance(handler, Handler)
@@ -81,44 +97,58 @@ class Server(object):
         for handler in self.handlers:
             handler.on_midi_commands(peer, commands)
 
-    def _build_control_protocol(self, host, family):
-        logger.info('Control socket on {}:{}'.format(host, self.port))
+    def _build_control_protocol(self, host, port, family):
+        logger.info('Control socket on {}:{}'.format(host, port))
         control_socket = socket.socket(family, socket.SOCK_DGRAM)
-        control_socket.bind((host, self.port))
+        control_socket.bind((host, port))
         return ControlProtocol(
             socket=control_socket,
             connect_cb=self._peer_connected_cb,
             disconnect_cb=self._peer_disconnected_cb)
 
-    def _build_data_protocol(self, host, family):
-        logger.info('Data socket on {}:{}'.format(host, self.port + 1))
+    def _build_data_protocol(self, host, family, ctrl_protocol):
+        ctrl_port = ctrl_protocol.socket.getsockname()[1]
+        logger.info('Data socket on {}:{}'.format(host, ctrl_port + 1))
         data_socket = socket.socket(family, socket.SOCK_DGRAM)
-        data_socket.bind((host, self.port + 1))
-        return DataProtocol(data_socket, midi_command_cb=self._midi_command_cb)
+        data_socket.bind((host, ctrl_port + 1))
+        data_protocol = DataProtocol(data_socket, midi_command_cb=self._midi_command_cb)
+        ctrl_protocol.associate_data_protocol(data_protocol)
+        return data_protocol
 
     def _init_protocols(self):
-        for host, family in ((self.host, socket.AF_INET), (self.ipv6_host, socket.AF_INET6)):
-            data_protocol = self._build_data_protocol(host, family)
-            ctrl_protocol = self._build_control_protocol(host, family)
-            ctrl_protocol.associate_data_protocol(data_protocol)
+        for host, port in self.bind_addrs:
+            if utils.is_ipv4_address(host):
+                family = socket.AF_INET
+            elif utils.is_ipv6_address(host):
+                family = socket.AF_INET6
+            else:
+                raise ValueError('Invalid bind host: "{}"'.format(host))
 
-            self.protocol_handlers[data_protocol.socket] = data_protocol
-            self.protocol_handlers[ctrl_protocol.socket] = ctrl_protocol
+            ctrl_protocol = self._build_control_protocol(host, port, family)
+            data_protocol = self._build_data_protocol(host, family, ctrl_protocol)
+
+            self.socket_map[data_protocol.socket] = data_protocol
+            self.socket_map[ctrl_protocol.socket] = ctrl_protocol
+
+            protos = (ctrl_protocol, data_protocol)
+            if family == socket.AF_INET:
+                self.ipv4_protocols = protos
+            elif family == socket.AF_INET6:
+                self.ipv6_protocols = protos
+
+    def _loop_once(self, timeout=None):
+        sockets = self.socket_map.keys()
+        rr, _, _ = select.select(sockets, [], [], timeout)
+        for s in rr:
+            buffer, addr = s.recvfrom(1024)
+            buffer = bytes(buffer)
+            proto = self.socket_map[s]
+            proto.handle_message(buffer, addr)
 
     def serve_forever(self):
         self._init_protocols()
-
-        sockets = [socket for socket in self.protocol_handlers.keys()]
         while True:
-            rr, _, _ = select.select(sockets, [], [])
-            for s in rr:
-                buffer, addr = s.recvfrom(1024)
-                buffer = bytes(buffer)
-                if s in self.protocol_handlers:
-                    proto = self.protocol_handlers[s]
-                    proto.handle_message(buffer, addr)
-                else:
-                    raise ValueError('Unknown socket.')
+            self._loop_once()
 
 
 if __name__ == '__main__':
@@ -152,7 +182,11 @@ if __name__ == '__main__':
                     velocity = command.params.velocity
                     print('Someone hit the key {} with velocity {}'.format(key, velocity))
 
-    server = Server(port=options.port, host=options.host, ipv6_host=options.ipv6_host)
+    bind_addrs = options.bind_addrs
+    if not bind_addrs:
+        bind_addrs = [DEFAULT_BIND_ADDR]
+
+    server = Server.from_bind_addrs(bind_addrs)
     server.add_handler(ExampleHandler())
 
     try:
