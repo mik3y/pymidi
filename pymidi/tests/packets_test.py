@@ -13,7 +13,7 @@ TIMESTAMP_PACKET = h2b('ffff434b47d8109602000000000000004400227e00000dfaad1e5c82
 # A midi packet with a Note On command
 SINGLE_MIDI_PACKET = h2b('8061427a4b9f303647d8109643903026204276000608006685')
 
-# A midi packet with two commands, utilixing running status.
+# A midi packet with two commands, utilizing running status.
 #
 # Commands
 #   0x90 0x3e 0x41  - NOTE_ON D3 velocity 49
@@ -137,9 +137,11 @@ class TestPackets(TestCase):
 
         pkt = packets.AppleMIDIExchangePacket.parse(APPLEMIDI_INVITATION_PACKET)
         strval = packets.to_string(pkt)
-        self.assertEqual('AppleMIDIExchangePacket [command=b\'IN\' ssrc=1205342358 name=mbook-session]',
+        self.assertEqual(
+            'AppleMIDIExchangePacket [command=IN ssrc=1205342358 name=mbook-session]',
             strval)
 
         pkt = packets.AppleMIDIExchangePacket.parse(APPLEMIDI_EXIT_PACKET)
         strval = packets.to_string(pkt)
-        self.assertEqual('AppleMIDIExchangePacket [command=b\'BY\' ssrc=1205342358 name=None]', strval)
+        self.assertEqual(
+            'AppleMIDIExchangePacket [command=BY ssrc=1205342358 name=None]', strval)

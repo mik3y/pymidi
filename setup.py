@@ -17,6 +17,7 @@ setup(
     install_requires=[
         'construct >= 2.9',
         'future >= 0.17.0',
+        'six >= 1.10.0',
     ],
     test_suite='nose.collector',
     tests_require=[

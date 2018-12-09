@@ -55,7 +55,7 @@ class BaseProtocol(object):
         return peer
 
     def _disconnect_peer(self, ssrc):
-        peer = self.peers_by_ssrc.pop(ssrc) # TODO(mikey): fix possible KeyError
+        peer = self.peers_by_ssrc.pop(ssrc, None)
         if peer and self.disconnect_cb:
             self.disconnect_cb(peer)
         return peer
@@ -76,7 +76,7 @@ class BaseProtocol(object):
                 self.handle_command_message(command, data, addr)
             else:
                 self.handle_data_message(data, addr)
-        except ConstructError as e:
+        except ConstructError:
             self.logger.exception('Bug or malformed packet, ignoring')
 
     def handle_data_message(self, data, addr):

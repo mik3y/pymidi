@@ -20,7 +20,6 @@ class ServerTests(TestCase):
         self.server.add_handler(self.handler)
 
     def test_server_bind(self):
-        """Confirms we have both ipv4 and ipv6 protocol handlers."""
         protos = self.server.socket_map
         self.assertEqual(2, len(protos))
 

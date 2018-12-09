@@ -3,7 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from construct import Struct, Const, PaddedString, CString, Padding, Int8ub, Int16ub, Int32ub
+from construct import Struct, Const, CString, Padding, Int8ub, Int16ub, Int32ub
 from construct import Int64ub, Bitwise, BitStruct, BitsInteger, Nibble, Flag, Optional, Bytes
 from construct import If, IfThenElse, GreedyBytes, GreedyRange, VarInt, FixedSized, Byte, Computed
 from construct import Switch, Enum, Peek
@@ -22,7 +22,8 @@ def to_string(pkt):
     detail = ''
 
     if name == 'AppleMIDIExchangePacket':
-        detail = '[command={} ssrc={} name={}]'.format(pkt.command, pkt.ssrc, pkt.name)
+        detail = '[command={} ssrc={} name={}]'.format(
+            pkt.command.decode('utf-8'), pkt.ssrc, pkt.name)
     elif name == 'MIDIPacket':
         items = []
         for entry in pkt.command.midi_list:
