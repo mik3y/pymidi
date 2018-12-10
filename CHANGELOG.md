@@ -1,6 +1,6 @@
 # Changelog
 
-## Current Version (in development)
+## v0.4.0 (2018-12-26)
 
 * Improvement: Python 3 support (#9).
 * Bugfix: Demo server: Fix IPv4/IPv6 support in dualstack environments (#8).

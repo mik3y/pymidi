@@ -4,7 +4,7 @@ A python RTP-MIDI / AppleMIDI implementation. You can use this library to build 
 
 [![Build Status](https://travis-ci.org/mik3y/pymidi.svg?branch=master)](https://travis-ci.org/mik3y/pymidi)
 
-**Latest release:** v0.3.0 (2018-10-20) ([changelog](https://github.com/mik3y/pymidi/blob/master/CHANGELOG.md))
+**Latest release:** v0.4.0 (2018-12-26) ([changelog](https://github.com/mik3y/pymidi/blob/master/CHANGELOG.md))
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -12,6 +12,7 @@ A python RTP-MIDI / AppleMIDI implementation. You can use this library to build 
 
 - [Quickstart](#quickstart)
 - [Developer Setup](#developer-setup)
+  - [Compatibility](#compatibility)
   - [Running tests](#running-tests)
   - [Developing against something else](#developing-against-something-else)
 - [Demo Server](#demo-server)
@@ -49,6 +50,10 @@ $ pipenv shell
 (pymidi-tFFCbXNj)
 $ python pymidi/server.py
 ```
+
+### Compatibility
+
+`pymidi` has been tested against Python 2.7 and Python 3.6.
 
 ### Running tests
 
