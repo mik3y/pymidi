@@ -3,15 +3,25 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import codecs
 import socket
 from six import string_types
+from builtins import bytes
 
 
 def h2b(s):
     """Converts a hex string to bytes; Python 2/3 compatible."""
-    if hasattr(s, 'decode'):
-        return s.decode('hex')
     return bytes.fromhex(s)
+
+
+def b2h(b):
+    """Converts a `bytes` object to a hex string."""
+    if not isinstance(b, bytes):
+        raise ValueError('Argument must be a `bytes`')
+    result = codecs.getencoder('hex_codec')(b)[0]
+    if isinstance(result, bytes):
+        result = result.decode('ascii')
+    return result
 
 
 def is_ipv4_address(ipstr):

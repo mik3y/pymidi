@@ -39,3 +39,9 @@ class UtilsTests(TestCase):
         good_addrs = [('127.0.0.1', 80), ('8.8.8.8', 2048), ('::', 5051)]
         for addr in good_addrs:
             utils.validate_addr(addr)
+
+    def test_b2h(self):
+        mybytes = b'yo'
+        self.assertEqual('796f', utils.b2h(mybytes))
+        mybytes = b'\xfe\xed\xfa\xce'
+        self.assertEqual('feedface', utils.b2h(mybytes))

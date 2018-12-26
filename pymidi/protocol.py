@@ -3,12 +3,12 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import binascii
 import logging
 import random
 import time
 
 from pymidi import packets
+from pymidi.utils import b2h
 from construct import ConstructError
 
 # Command messages are preceded with this sequence.
@@ -62,17 +62,17 @@ class BaseProtocol(object):
 
     def sendto(self, message, addr):
         if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug('tx: {}'.format(binascii.hexlify(message)))
+            self.logger.debug('tx: {}'.format(b2h(message)))
         self.socket.sendto(message, addr)
 
     def handle_message(self, data, addr):
         if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug('rx: {}'.format(data.hex()))
+            self.logger.debug('rx: {}'.format(b2h(data)))
 
         try:
             if data[0:2] == APPLEMIDI_PREAMBLE:
                 command = data[2:4]
-                self.logger.debug('Command: {}'.format(command.hex()))
+                self.logger.debug('Command: {}'.format(b2h(command)))
                 self.handle_command_message(command, data, addr)
             else:
                 self.handle_data_message(data, addr)
