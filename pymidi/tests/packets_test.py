@@ -13,7 +13,7 @@ TIMESTAMP_PACKET = h2b('ffff434b47d8109602000000000000004400227e00000dfaad1e5c82
 # A midi packet with a Note On command
 SINGLE_MIDI_PACKET = h2b('8061427a4b9f303647d8109643903026204276000608006685')
 
-# A midi packet with two commands, utilixing running status.
+# A midi packet with two commands, utilizing running status.
 #
 # Commands
 #   0x90 0x3e 0x41  - NOTE_ON D3 velocity 49
@@ -39,7 +39,7 @@ class TestPackets(TestCase):
     def test_exchange_packet(self):
         pkt = packets.AppleMIDIExchangePacket.parse(EXCHANGE_PACKET)
         self.assertEqual(b'\xff\xff', pkt.preamble)
-        self.assertEqual('IN', pkt.command)
+        self.assertEqual(b'IN', pkt.command)
         self.assertEqual(2, pkt.protocol_version)
         self.assertEqual(1714636915, pkt.initiator_token)
         self.assertEqual(1205342358, pkt.ssrc)
@@ -48,7 +48,7 @@ class TestPackets(TestCase):
     def test_timestamp_packet(self):
         pkt = packets.AppleMIDITimestampPacket.parse(TIMESTAMP_PACKET)
         self.assertEqual(b'\xff\xff', pkt.preamble)
-        self.assertEqual('CK', pkt.command)
+        self.assertEqual(b'CK', pkt.command)
         self.assertEqual(1205342358, pkt.ssrc)
         self.assertEqual(2, pkt.count)
         self.assertEqual(1140859518, pkt.timestamp_1)
@@ -137,9 +137,11 @@ class TestPackets(TestCase):
 
         pkt = packets.AppleMIDIExchangePacket.parse(APPLEMIDI_INVITATION_PACKET)
         strval = packets.to_string(pkt)
-        self.assertEqual('AppleMIDIExchangePacket [command=IN ssrc=1205342358 name=mbook-session]',
+        self.assertEqual(
+            'AppleMIDIExchangePacket [command=IN ssrc=1205342358 name=mbook-session]',
             strval)
 
         pkt = packets.AppleMIDIExchangePacket.parse(APPLEMIDI_EXIT_PACKET)
         strval = packets.to_string(pkt)
-        self.assertEqual('AppleMIDIExchangePacket [command=BY ssrc=1205342358 name=None]', strval)
+        self.assertEqual(
+            'AppleMIDIExchangePacket [command=BY ssrc=1205342358 name=None]', strval)

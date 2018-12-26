@@ -3,23 +3,23 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import binascii
 import logging
 import random
 import time
 
 from pymidi import packets
+from pymidi.utils import b2h
 from construct import ConstructError
 
 # Command messages are preceded with this sequence.
 APPLEMIDI_PREAMBLE = b'\xff\xff'
 
 # Two-byte RTP-MIDI control commands
-APPLEMIDI_COMMAND_INVITATION = 'IN'
-APPLEMIDI_COMMAND_INVITATION_ACCEPTED = 'OK'
-APPLEMIDI_COMMAND_INVITATION_REJECTED = 'NO'
-APPLEMIDI_COMMAND_TIMESTAMP_SYNC = 'CK'
-APPLEMIDI_COMMAND_EXIT = 'BY'
+APPLEMIDI_COMMAND_INVITATION = b'IN'
+APPLEMIDI_COMMAND_INVITATION_ACCEPTED = b'OK'
+APPLEMIDI_COMMAND_INVITATION_REJECTED = b'NO'
+APPLEMIDI_COMMAND_TIMESTAMP_SYNC = b'CK'
+APPLEMIDI_COMMAND_EXIT = b'BY'
 
 
 class Peer(object):
@@ -55,29 +55,29 @@ class BaseProtocol(object):
         return peer
 
     def _disconnect_peer(self, ssrc):
-        peer = self.peers_by_ssrc.pop(ssrc)
+        peer = self.peers_by_ssrc.pop(ssrc, None)
         if peer and self.disconnect_cb:
             self.disconnect_cb(peer)
         return peer
 
     def sendto(self, message, addr):
         if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug('tx: {}'.format(binascii.hexlify(message)))
+            self.logger.debug('tx: {}'.format(b2h(message)))
         self.socket.sendto(message, addr)
 
     def handle_message(self, data, addr):
         if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug('rx: {}'.format(data.encode('hex')))
+            self.logger.debug('rx: {}'.format(b2h(data)))
 
         try:
             if data[0:2] == APPLEMIDI_PREAMBLE:
                 command = data[2:4]
-                self.logger.debug('Command: {}'.format(command))
+                self.logger.debug('Command: {}'.format(b2h(command)))
                 self.handle_command_message(command, data, addr)
             else:
                 self.handle_data_message(data, addr)
-        except ConstructError as e:
-            self.logger.warning('Bug or malformed packet, ignoring: {}'.format(e))
+        except ConstructError:
+            self.logger.exception('Bug or malformed packet, ignoring')
 
     def handle_data_message(self, data, addr):
         pass

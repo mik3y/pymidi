@@ -5,12 +5,12 @@ name = "pypi"
 
 [packages]
 "e1839a8" = {path = ".", editable = true}
+future = "*"
+six = "*"
 
 [dev-packages]
 nose = "*"
 "flake8" = "*"
 coloredlogs = "*"
 twine = "*"
-
-[requires]
-python_version = "2.7"
+mock = "*"
