@@ -7,6 +7,7 @@ name = "pypi"
 e1839a8 = {path = ".",editable = true}
 future = "*"
 six = "*"
+construct = "*"
 
 [dev-packages]
 "flake8" = "*"
