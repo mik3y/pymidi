@@ -53,7 +53,7 @@ $ python pymidi/server.py
 
 ### Compatibility
 
-`pymidi` has been tested against Python 2.7 and Python 3.6.
+`pymidi` requires Python 3. It has been tested against Python 3.6 and Python 3.7.
 
 ### Running tests
 
