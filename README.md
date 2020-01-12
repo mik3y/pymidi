@@ -57,11 +57,10 @@ $ python pymidi/server.py
 
 ### Running tests
 
-Tests are run with nose; either of the following will work:
+Tests are run with pytest:
 
 ```
-$ python setup.py test
-$ nosetests
+$ pytest
 ```
 
 ### Developing against something else

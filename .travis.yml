@@ -9,7 +9,7 @@ install:
   - pipenv install --dev
 
 script:
-  - pipenv run nosetests
+  - pipenv run pytest
   - pipenv run flake8
 
 notifications:

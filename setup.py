@@ -19,9 +19,8 @@ setup(
         'future >= 0.17.0',
         'six >= 1.10.0',
     ],
-    test_suite='nose.collector',
     tests_require=[
-        'nose',
+        'pytest',
         'flake8',
     ],
 )
