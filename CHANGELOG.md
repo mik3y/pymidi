@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.5.0 (2020-01-12)
+
+* Python 2 support removed.
+
 ## v0.4.0 (2018-12-26)
 
 * Improvement: Python 3 support (#9).

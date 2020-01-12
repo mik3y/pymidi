@@ -4,13 +4,14 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-"e1839a8" = {path = ".", editable = true}
+e1839a8 = {path = ".",editable = true}
 future = "*"
 six = "*"
+construct = "*"
 
 [dev-packages]
-nose = "*"
 "flake8" = "*"
 coloredlogs = "*"
 twine = "*"
 mock = "*"
+pytest = "*"

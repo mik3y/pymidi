@@ -1,15 +1,15 @@
 language: python
 
 python:
-  - '2.7'
   - '3.6'
+  - '3.7'
 
 install:
   - pip install pipenv
   - pipenv install --dev
 
 script:
-  - pipenv run nosetests
+  - pipenv run pytest
   - pipenv run flake8
 
 notifications:

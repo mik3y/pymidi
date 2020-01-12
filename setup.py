@@ -5,7 +5,7 @@ with open('README.md') as f:
 
 setup(
     name='pymidi',
-    version='0.4.0',
+    version='0.5.0',
     license='MIT',
     url='https://github.com/mik3y/pymidi',
     author='mike wakerly',
@@ -19,9 +19,8 @@ setup(
         'future >= 0.17.0',
         'six >= 1.10.0',
     ],
-    test_suite='nose.collector',
     tests_require=[
-        'nose',
+        'pytest',
         'flake8',
     ],
 )
