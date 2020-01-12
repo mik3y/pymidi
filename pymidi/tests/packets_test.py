@@ -58,7 +58,7 @@ class TestPackets(TestCase):
     def test_single_midi_packet(self):
         pkt = packets.MIDIPacket.parse(SINGLE_MIDI_PACKET)
         print(pkt)
-        self.assert_(pkt.header, 'Expected a header')
+        self.assertTrue(pkt.header, 'Expected a header')
         self.assertEqual(2, pkt.header.rtp_header.flags.v)
         self.assertEqual(False, pkt.header.rtp_header.flags.p)
         self.assertEqual(False, pkt.header.rtp_header.flags.x)
@@ -67,7 +67,7 @@ class TestPackets(TestCase):
         self.assertEqual(0x61, pkt.header.rtp_header.flags.pt)
         self.assertEqual(17018, pkt.header.rtp_header.sequence_number)
 
-        self.assert_(pkt.command, 'Expected a command')
+        self.assertTrue(pkt.command, 'Expected a command')
         self.assertEqual(False, pkt.command.flags.b)
         self.assertEqual(True, pkt.command.flags.j)
         self.assertEqual(False, pkt.command.flags.z)
@@ -80,13 +80,13 @@ class TestPackets(TestCase):
         self.assertEqual(0x90, command.command_byte)
         self.assertEqual('note_on', command.command)
         self.assertEqual('C3', command.params.key)
-        self.assert_(38, command.params.velocity)
+        self.assertTrue(38, command.params.velocity)
 
-        self.assert_(pkt.journal, 'Expected journal')
+        self.assertTrue(pkt.journal, 'Expected journal')
 
     def test_multi_midi_packet(self):
         pkt = packets.MIDIPacket.parse(MULTI_MIDI_PACKET)
-        self.assert_(pkt.header, 'Expected a header')
+        self.assertTrue(pkt.header, 'Expected a header')
         self.assertEqual(2, pkt.header.rtp_header.flags.v)
         self.assertEqual(False, pkt.header.rtp_header.flags.p)
         self.assertEqual(False, pkt.header.rtp_header.flags.x)
@@ -95,7 +95,7 @@ class TestPackets(TestCase):
         self.assertEqual(0x61, pkt.header.rtp_header.flags.pt)
         self.assertEqual(17050, pkt.header.rtp_header.sequence_number)
 
-        self.assert_(pkt.command, 'Expected a command')
+        self.assertTrue(pkt.command, 'Expected a command')
         self.assertEqual(False, pkt.command.flags.b)
         self.assertEqual(True, pkt.command.flags.j)
         self.assertEqual(False, pkt.command.flags.z)
@@ -107,20 +107,20 @@ class TestPackets(TestCase):
         self.assertEqual(0x90, command.command_byte)
         self.assertEqual('note_on', command.command)
         self.assertEqual('D4', command.params.key)
-        self.assert_(38, command.params.velocity)
+        self.assertTrue(38, command.params.velocity)
 
         command = pkt.command.midi_list[1]
         self.assertEqual(0x90, command.command_byte)
         self.assertEqual('note_on', command.command)
         self.assertEqual('E4', command.params.key)
-        self.assert_(38, command.params.velocity)
+        self.assertTrue(38, command.params.velocity)
 
-        self.assert_(pkt.journal, 'Expected journal')
+        self.assertTrue(pkt.journal, 'Expected journal')
 
     def test_packet_with_no_journal(self):
         pkt = packets.MIDIPacket.parse(h2b('806142a0550d8a5a47d8109603903446'))
         self.assertEqual(False, pkt.command.flags.j, 'Expected J bit to be clear')
-        self.assert_(not pkt.journal, 'Expected no journal')
+        self.assertTrue(not pkt.journal, 'Expected no journal')
 
     def test_to_string(self):
         pkt = packets.MIDIPacket.parse(SINGLE_MIDI_PACKET)
