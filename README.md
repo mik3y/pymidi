@@ -30,23 +30,23 @@ $ pip install pymidi
 or
 
 ```
-pipenv install pymidi
+poetry install pymidi
 ```
 
 See [Using in Another Project](#using-in-another-project) and the [Developer Setup wiki](wiki/Developer-MIDI-Setup) for more information.
 
 ## Developer Setup
 
-Set up your workspace with the very excellent [Pipenv](https://pipenv.readthedocs.io/en/latest/):
+Set up your workspace with the very excellent [Poetry](https://python-poetry.org/):
 
 ```
-$ pipenv install
+$ poetry install
 ```
 
-Once installed, you'll probably find it useful to work in a `pipenv shell`, for ease of testing and running things:
+Once installed, you'll probably find it useful to work in a `poetry shell`, for ease of testing and running things:
 
 ```
-$ pipenv shell
+$ poetry shell
 (pymidi-tFFCbXNj)
 $ python pymidi/server.py
 ```
@@ -69,7 +69,7 @@ If you're working on a project that uses `pymidi` and want to develop both concu
 
 ```
 $ cd ~/git/otherproject
-$ pipenv shell
+$ poetry shell
 $ pushd ~/git/pymidi && python setup.py develop && popd
 ```
 

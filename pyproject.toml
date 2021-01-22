@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "pymidi"
+version = "0.6.0-pre1"
+description = "Python library for building RTP-MIDI clients and servers"
+authors = ["mike wakerly <opensource@hoho.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+six = "^1.15.0"
+construct = "^2.10.56"
+
+[tool.poetry.dev-dependencies]
+flake8 = "^3.8.4"
+coloredlogs = "^15.0"
+twine = "^3.3.0"
+mock = "^4.0.3"
+pytest = "^6.2.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

@@ -1,5 +1,9 @@
 # Changelog
 
+## Current version (in development)
+
+* Internal: Switched from `pipenv` to `poetry`.
+
 ## v0.5.0 (2020-01-12)
 
 * Python 2 support removed.
