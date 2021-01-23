@@ -21,16 +21,18 @@ logger = logging.getLogger('pymidi.examples.server')
 DEFAULT_BIND_ADDR = '0.0.0.0:5051'
 
 parser = OptionParser()
-parser.add_option('-b', '--bind_addr',
+parser.add_option(
+    '-b',
+    '--bind_addr',
     dest='bind_addrs',
     action='append',
     default=None,
-    help='<ip>:<port> for listening; may give multiple times; default {}'.format(DEFAULT_BIND_ADDR))
-parser.add_option('-v', '--verbose',
-    action='store_true',
-    dest='verbose',
-    default=False,
-    help='show verbose logs')
+    help='<ip>:<port> for listening; may give multiple times; default {}'.format(DEFAULT_BIND_ADDR),
+)
+parser.add_option(
+    '-v', '--verbose', action='store_true', dest='verbose', default=False, help='show verbose logs'
+)
+
 
 def main():
     options, args = parser.parse_args()
@@ -47,6 +49,7 @@ def main():
         This handler doesn't do all that much; we're just using one here to
         illustrate the handler interface, so you can write a much cooler one.
         """
+
         def __init__(self):
             self.logger = logging.getLogger('ExampleHandler')
 
@@ -75,5 +78,6 @@ def main():
     except KeyboardInterrupt:
         logger.info('Got CTRL-C, quitting')
         sys.exit(0)
+
 
 main()

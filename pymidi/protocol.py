@@ -24,6 +24,7 @@ APPLEMIDI_COMMAND_EXIT = b'BY'
 
 class Peer(object):
     """Holds state about a midi peer."""
+
     def __init__(self, name, addr, ssrc):
         self.name = name
         self.addr = addr
@@ -90,13 +91,15 @@ class BaseProtocol(object):
                 self.logger.warning('Ignoring duplicate connection from ssrc {}'.format(ssrc))
                 return
             peer = self._connect_peer(name=packet.name, addr=addr, ssrc=ssrc)
-            response = packets.AppleMIDIExchangePacket.build(dict(
-                command=APPLEMIDI_COMMAND_INVITATION_ACCEPTED,
-                protocol_version=2,
-                initiator_token=packet.initiator_token,
-                ssrc=self.ssrc,
-                name=self.name,
-            ))
+            response = packets.AppleMIDIExchangePacket.build(
+                dict(
+                    command=APPLEMIDI_COMMAND_INVITATION_ACCEPTED,
+                    protocol_version=2,
+                    initiator_token=packet.initiator_token,
+                    ssrc=self.ssrc,
+                    name=self.name,
+                )
+            )
             self.sendto(response, addr)
             self.logger.info('Accepted connection from {}'.format(peer))
         elif command == APPLEMIDI_COMMAND_EXIT:
@@ -157,14 +160,16 @@ class DataProtocol(BaseProtocol):
 
         now = int(time.time() * 10000)  # units of 100 microseconds
         if packet.count == 0:
-            response = packets.AppleMIDITimestampPacket.build(dict(
-                command=APPLEMIDI_COMMAND_TIMESTAMP_SYNC,
-                count=1,
-                ssrc=self.ssrc,
-                timestamp_1=packet.timestamp_1,
-                timestamp_2=now,
-                timestamp_3=0,
-            ))
+            response = packets.AppleMIDITimestampPacket.build(
+                dict(
+                    command=APPLEMIDI_COMMAND_TIMESTAMP_SYNC,
+                    count=1,
+                    ssrc=self.ssrc,
+                    timestamp_1=packet.timestamp_1,
+                    timestamp_2=now,
+                    timestamp_3=0,
+                )
+            )
             self.sendto(response, addr)
         elif packet.count == 2:
             offset_estimate = ((packet.timestamp_3 + packet.timestamp_1) / 2) - packet.timestamp_2

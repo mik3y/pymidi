@@ -138,10 +138,9 @@ class TestPackets(TestCase):
         pkt = packets.AppleMIDIExchangePacket.parse(APPLEMIDI_INVITATION_PACKET)
         strval = packets.to_string(pkt)
         self.assertEqual(
-            'AppleMIDIExchangePacket [command=IN ssrc=1205342358 name=mbook-session]',
-            strval)
+            'AppleMIDIExchangePacket [command=IN ssrc=1205342358 name=mbook-session]', strval
+        )
 
         pkt = packets.AppleMIDIExchangePacket.parse(APPLEMIDI_EXIT_PACKET)
         strval = packets.to_string(pkt)
-        self.assertEqual(
-            'AppleMIDIExchangePacket [command=BY ssrc=1205342358 name=None]', strval)
+        self.assertEqual('AppleMIDIExchangePacket [command=BY ssrc=1205342358 name=None]', strval)

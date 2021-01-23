@@ -86,7 +86,8 @@ class Server(object):
         return ControlProtocol(
             socket=control_socket,
             connect_cb=self._peer_connected_cb,
-            disconnect_cb=self._peer_disconnected_cb)
+            disconnect_cb=self._peer_disconnected_cb,
+        )
 
     def _build_data_protocol(self, host, family, ctrl_protocol):
         ctrl_port = ctrl_protocol.socket.getsockname()[1]

@@ -3,6 +3,7 @@
 ## Current version (in development)
 
 * Internal: Switched from `pipenv` to `poetry`.
+* Internal: Added `black` for code formatting.
 
 ## v0.5.0 (2020-01-12)
 
