@@ -75,15 +75,15 @@ $ pushd ~/git/pymidi && python setup.py develop && popd
 
 This creates a link to `~/git/pymidi` within the environment of `~/git/otherproject`.
 
-## Demo Server
+## Demo Server and Examples
 
 The library includes a simple demo server which prints stuff.
 
 ```
-$ python pymidi/server.py
+$ python pymidi/examples/example_server.py
 ```
 
-See `--help` for usage.
+See `--help` for usage. See the `examples/` directory for other examples.
 
 ## Using in Another Project
 
