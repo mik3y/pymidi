@@ -257,7 +257,7 @@ MIDIPacketCommand = Struct(
                 '__next' / Peek(Int8ub),
                 'command_byte'
                 / IfThenElse(
-                    lambda ctx: _this.__next & 0x80,
+                    _this.__next & 0x80,
                     Byte * remember_last,
                     Computed(lambda ctx: ctx._root._last_command_byte),
                 ),
