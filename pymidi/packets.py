@@ -3,7 +3,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from construct import Struct, Const, CString, Padding, Int8ub, Int16ub, Int32ub
+from construct import Struct as BaseStruct
+from construct import Const, CString, Padding, Int8ub, Int16ub, Int32ub
 from construct import Int64ub, Bitwise, BitStruct, BitsInteger, Nibble, Flag, Optional, Bytes
 from construct import If, IfThenElse, GreedyBytes, GreedyRange, VarInt, FixedSized, Byte, Computed
 from construct import Switch, Enum, Peek
@@ -48,6 +49,12 @@ def remember_last(obj, ctx):
     setattr(ctx._root, '_last_command_byte', obj)
 
 
+class Struct(BaseStruct):
+    """Adds `create()`, a friendlier `build()` method."""
+    def create(self, **kwargs):
+        return self.build(kwargs)
+
+
 AppleMIDIExchangePacket = Struct(
     '_name' / Computed('AppleMIDIExchangePacket'),
     'preamble' / Const(b'\xff\xff'),
@@ -70,19 +77,23 @@ AppleMIDITimestampPacket = Struct(
     'timestamp_3' / Int64ub,
 )
 
+MIDIPacketHeaderFlags = Bitwise(Struct(
+    'v' / BitsInteger(2),  # always 0x2
+    'p' / Flag,  # always 0
+    'x' / Flag,  # always 0
+    'cc' / Nibble,  # always 0
+    'm' / Flag,  # always 0x1
+    'pt' / BitsInteger(7),  # always 0x61
+))
+
+RTPHeader = Struct(
+    'flags' / MIDIPacketHeaderFlags,
+    'sequence_number' / Int16ub,  # always 'K'
+)
+
 MIDIPacketHeader = Struct(
     '_name' / Computed('MIDIPacketHeader'),
-    'rtp_header' / Struct(
-        'flags' / Bitwise(Struct(
-            'v' / BitsInteger(2),  # always 0x2
-            'p' / Flag,  # always 0
-            'x' / Flag,  # always 0
-            'cc' / Nibble,  # always 0
-            'm' / Flag,  # always 0x1
-            'pt' / BitsInteger(7),  # always 0x61
-        )),
-        'sequence_number' / Int16ub,  # always 'K'
-    ),
+    'rtp_header' / RTPHeader,
     'timestamp' / Int32ub,
     'ssrc' / Int32ub,
 )
@@ -238,7 +249,7 @@ MIDIPacketCommand = Struct(
         # on the global context with the `* remember_last` macro; then using it
         # on the `else` branch of the `command_byte` selection.
         '__next' / Peek(Int8ub),
-        'command_byte' / IfThenElse(_this.__next & 0x80,
+        'command_byte' / IfThenElse(lambda ctx: _this.__next & 0x80,
             Byte * remember_last,
             Computed(lambda ctx: ctx._root._last_command_byte)
         ),
