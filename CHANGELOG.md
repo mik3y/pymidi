@@ -2,6 +2,7 @@
 
 ## Current version (in development)
 
+* Bugfix: Fix crash when sender name contains non-ascii characters (#18).
 * Internal: Switched from `pipenv` to `poetry`.
 * Internal: Added `black` for code formatting.
 
