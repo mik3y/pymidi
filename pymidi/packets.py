@@ -60,7 +60,7 @@ AppleMIDIExchangePacket = Struct(
     'protocol_version' / Int32ub,
     'initiator_token' / Int32ub,
     'ssrc' / Int32ub,
-    'name' / Optional(CString('ascii')),
+    'name' / Optional(CString('utf8')),
 )
 
 AppleMIDITimestampPacket = Struct(

@@ -2,7 +2,7 @@ from unittest import TestCase
 from pymidi import packets
 from pymidi.utils import h2b
 
-EXCHANGE_PACKET = h2b('ffff494e000000026633487347d810966d626f6f6b2d73657373696f6e00')
+EXCHANGE_PACKET = h2b('ffff494e000000026633487347d810964d696b65e2809973204d616300')
 TIMESTAMP_PACKET = h2b('ffff434b47d8109602000000000000004400227e00000dfaad1e5c820000000044002288')
 
 # A midi packet with a Note On command
@@ -38,7 +38,7 @@ class TestPackets(TestCase):
         self.assertEqual(2, pkt.protocol_version)
         self.assertEqual(1714636915, pkt.initiator_token)
         self.assertEqual(1205342358, pkt.ssrc)
-        self.assertEqual('mbook-session', pkt.name)
+        self.assertEqual('Mike’s Mac', pkt.name)
 
     def test_timestamp_packet(self):
         pkt = packets.AppleMIDITimestampPacket.parse(TIMESTAMP_PACKET)
