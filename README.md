@@ -2,9 +2,9 @@
 
 A python RTP-MIDI / AppleMIDI implementation. You can use this library to build a network attached virtual MIDI device.
 
-[![Build Status](https://travis-ci.org/mik3y/pymidi.svg?branch=master)](https://travis-ci.org/mik3y/pymidi)
+[![Build Status](https://travis-ci.org/mik3y/pymidi.svg?branch=main)](https://travis-ci.org/mik3y/pymidi)
 
-**Latest release:** v0.4.0 (2018-12-26) ([changelog](https://github.com/mik3y/pymidi/blob/master/CHANGELOG.md))
+**Latest release:** v0.5.0 (2020-01-12) ([changelog](https://github.com/mik3y/pymidi/blob/main/CHANGELOG.md))
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
