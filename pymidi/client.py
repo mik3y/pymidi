@@ -107,7 +107,7 @@ class Client(object):
         self._send_rtp_command(command)
 
     def _send_rtp_command(self, command):
-# Does note seem to be used anywhere - removing for possible performnace gain
+# Does not seem to be used anywhere - removing for possible performnace gain
 #        header = packets.MIDIPacketHeader.create(
 #            rtp_header={
 #                'flags': {
