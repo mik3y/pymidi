@@ -38,3 +38,27 @@ jobs:
         run: tox
         env:
           PLATFORM: ${{ matrix.platform }}
+
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install poetry tox tox-gh-actions
+
+      - name: Check formatting with `black`
+        run: tox -e black -- .
+
+      - name: Check imports with `isort`
+        run: tox -e isort -- .
