@@ -3,3 +3,6 @@
 .eggs/
 dist/
 .idea
+.DS_Store
+.tox/
+.vscode/
