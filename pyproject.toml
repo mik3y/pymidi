@@ -13,15 +13,15 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-six = "^1.15.0"
-construct = "^2.10.56"
+six = "^1.16.0"
+construct = "^2.10.68"
 
 [tool.poetry.dev-dependencies]
-flake8 = "^3.8.4"
-coloredlogs = "^15.0"
-twine = "^3.3.0"
+flake8 = "^3.9.2"
+coloredlogs = "^15.0.1"
+twine = "^3.8.0"
 mock = "^4.0.3"
-pytest = "^6.2.1"
+pytest = "^6.2.5"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
