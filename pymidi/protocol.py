@@ -169,3 +169,6 @@ class DataProtocol(BaseProtocol):
         elif packet.count == 2:
             offset_estimate = ((packet.timestamp_3 + packet.timestamp_1) / 2) - packet.timestamp_2
             self.logger.debug('offset estimate: {}'.format(offset_estimate))
+
+            latency = (packet.timestamp_3-packet.timestamp_1)/10
+            self.logger.info('Peer {} latency: {}ms'.format(self.peers_by_ssrc[packet.ssrc].name,latency))
