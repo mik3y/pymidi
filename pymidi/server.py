@@ -25,7 +25,7 @@ class Handler(object):
     def on_peer_disconnected(self, peer):
         pass
 
-    def on_midi_commands(self, peer, command_list):
+    def on_midi_commands(self, peer, command_list, journal):
         pass
 
 
@@ -77,7 +77,7 @@ class Server(object):
     def _midi_command_cb(self, peer, midi_packet):
         commands = midi_packet.command.midi_list
         for handler in self.handlers:
-            handler.on_midi_commands(peer, commands)
+            handler.on_midi_commands(peer, commands, midi_packet.journal)
 
     def _build_control_protocol(self, host, port, family):
         logger.info('Control socket on {}:{}'.format(host, port))

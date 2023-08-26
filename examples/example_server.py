@@ -59,7 +59,7 @@ def main():
         def on_peer_disconnected(self, peer):
             self.logger.info('Peer disconnected: {}'.format(peer))
 
-        def on_midi_commands(self, peer, command_list):
+        def on_midi_commands(self, peer, command_list, journal):
             for command in command_list:
                 if command.command == 'note_on':
                     key = command.params.key
