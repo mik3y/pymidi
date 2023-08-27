@@ -14,6 +14,7 @@ APPLEMIDI_COMMAND_INVITATION = b'IN'
 APPLEMIDI_COMMAND_INVITATION_ACCEPTED = b'OK'
 APPLEMIDI_COMMAND_INVITATION_REJECTED = b'NO'
 APPLEMIDI_COMMAND_TIMESTAMP_SYNC = b'CK'
+APPLEMIDI_COMMAND_JOURNAL_SYNCHRONIZATION = b'RS'
 APPLEMIDI_COMMAND_EXIT = b'BY'
 
 
@@ -105,6 +106,11 @@ class BaseProtocol(object):
                 return
             peer = self._disconnect_peer(ssrc)
             self.logger.info('Peer {} exited'.format(peer))
+        elif command == APPLEMIDI_COMMAND_JOURNAL_SYNCHRONIZATION:
+            #
+            # To be implemented
+            #
+            self.logger.warning('Ignoring unsupported command (journal sync): {}'.format(command))
         else:
             self.logger.warning('Ignoring unrecognized command: {}'.format(command))
 
