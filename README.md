@@ -101,8 +101,8 @@ class MyHandler(server.Handler):
     def on_peer_disconnected(self, peer):
         print('Peer disconnected: {}'.format(peer))
 
-    def on_midi_commands(self, peer, command_list):
-        for command in command_list:
+    def on_midi_commands(self, peer, midi_packet):
+        for command in midi_packet.command.midi_list:
             if command.command == 'note_on':
                 key = command.params.key
                 velocity = command.params.velocity

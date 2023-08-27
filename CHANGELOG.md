@@ -5,6 +5,9 @@
 * Bugfix: Fix crash when sender name contains non-ascii characters (#18).
 * Internal: Switched from `pipenv` to `poetry`.
 * Internal: Added `black` for code formatting.
+* Improvement: Calculates latency to client and outputs as info.
+* Imprvoement: Decodes pitch blend change messages.
+* Breaking change: `on_midi_commands` callback handler now passes whole MIDI packet rather than a list of commands - this is useful if the journal (or other data) is required.
 
 ## v0.5.0 (2020-01-12)
 
