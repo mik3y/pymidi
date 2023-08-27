@@ -38,7 +38,7 @@ class Client(object):
         self.host = None
         self.port = None
         self.sourcePort = sourcePort or 5004
-        print(f'--sourcePort {self.sourcePort}')
+        self.name = name or 'PyMidi'
 
     def connect(self, host, port):
         if self.host and self.port:
@@ -49,6 +49,7 @@ class Client(object):
             command=protocol.APPLEMIDI_COMMAND_INVITATION,
             initiator_token=random.randint(0, 2 ** 32 - 1),
             ssrc=self.ssrc,
+            name=self.name
         )
 
         for index in (0, 1):
