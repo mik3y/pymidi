@@ -31,28 +31,33 @@ class AlreadyConnected(ClientError):
 
 
 class Client(object):
-    def __init__(self, name='PyMidi', ssrc=None):
+    def __init__(self, name='PyMidi', ssrc=None, sourcePort=None):
         """Creates a new Client instance."""
         self.ssrc = ssrc or random.randint(0, 2 ** 32 - 1)
-        self.socket = None
+        self.socket = [None,None] # Need to have a command and data socket on the client side
         self.host = None
         self.port = None
+        self.sourcePort = sourcePort or 5004
+        print(f'--sourcePort {self.sourcePort}')
 
     def connect(self, host, port):
         if self.host and self.port:
             raise ClientError(f'Already connected to {self.host}:{self.port}')
 
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         pkt = packets.AppleMIDIExchangePacket.create(
             protocol_version=2,
             command=protocol.APPLEMIDI_COMMAND_INVITATION,
             initiator_token=random.randint(0, 2 ** 32 - 1),
             ssrc=self.ssrc,
         )
-        for target_port in (port, port + 1):
-            logger.info(f'Sending exchange packet to port {target_port}...')
-            self.socket.sendto(pkt, (host, target_port))
-            packet = self.get_next_packet()
+
+        for index in (0, 1):
+            self.socket[index] = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.socket[index].bind(('0.0.0.0', self.sourcePort+index))
+
+            logger.info(f'Sending exchange packet to port {port+index} from port {self.sourcePort+index}...')
+            self.socket[index].sendto(pkt, (host, port+index))
+            packet = self.get_next_packet(self.socket[index])
             if not packet:
                 raise Exception('No packet received')
             if packet._name != 'AppleMIDIExchangePacket':
@@ -104,9 +109,9 @@ class Client(object):
                 }
             ],
         }
-        self._send_rtp_command(command)
+        self._send_rtp_command(self.socket[1], command)
 
-    def _send_rtp_command(self, command):
+    def _send_rtp_command(self, socket, command):
         packet = packets.MIDIPacket.create(
             header={
                 'rtp_header': {
@@ -127,10 +132,10 @@ class Client(object):
             journal='',
         )
 
-        self.socket.sendto(packet, (self.host, self.port + 1))
+        socket.sendto(packet, (self.host, self.port + 1))
 
-    def get_next_packet(self):
-        data, addr = self.socket.recvfrom(1024)
+    def get_next_packet(self, socket):
+        data, addr = socket.recvfrom(1024)
         command = data[2:4]
         try:
             if data[0:2] == protocol.APPLEMIDI_PREAMBLE:
