@@ -107,23 +107,6 @@ class Client(object):
         self._send_rtp_command(command)
 
     def _send_rtp_command(self, command):
-# Does not seem to be used anywhere - removing for possible performnace gain
-#        header = packets.MIDIPacketHeader.create(
-#            rtp_header={
-#                'flags': {
-#                    'v': 0x2,
-#                    'p': 0,
-#                    'x': 0,
-#                    'cc': 0,
-#                    'm': 0x1,
-#                    'pt': 0x61,
-#                },
-#                'sequence_number': ord('K'),
-#            },
-#            timestamp=int(time.time()),
-#            ssrc=self.ssrc,
-#        )
-
         packet = packets.MIDIPacket.create(
             header={
                 'rtp_header': {
