@@ -39,6 +39,7 @@ class Client(object):
         self.port = None
         self.sourcePort = sourcePort or 5004
         self.name = name or 'PyMidi'
+        self.sequenceNumber = 1
 
     def connect(self, host, port):
         if self.host and self.port:
@@ -123,7 +124,7 @@ class Client(object):
                         'm': 0x1,
                         'pt': 0x61,
                     },
-                    'sequence_number': ord('K'),
+                    'sequence_number': self.sequenceNumber,
                 },
                 'timestamp': get_timestamp(),
                 'ssrc': self.ssrc,
@@ -133,6 +134,7 @@ class Client(object):
         )
 
         socket.sendto(packet, (self.host, self.port + 1))
+        self.sequenceNumber += 1
 
     def get_next_packet(self, socket):
         data, addr = socket.recvfrom(1024)
