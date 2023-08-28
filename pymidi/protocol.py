@@ -1,9 +1,9 @@
 import logging
 import random
-import time
 
 from pymidi import packets
 from pymidi.utils import b2h
+from pymidi.utils import get_timestamp
 from construct import ConstructError
 
 # Command messages are preceded with this sequence.
@@ -114,7 +114,6 @@ class BaseProtocol(object):
         else:
             self.logger.warning('Ignoring unrecognized command: {}'.format(command))
 
-
 class ControlProtocol(BaseProtocol):
     def __init__(self, data_protocol=None, *args, **kwargs):
         super(ControlProtocol, self).__init__(*args, **kwargs)
@@ -159,7 +158,6 @@ class DataProtocol(BaseProtocol):
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(packet)
 
-        now = int(time.time() * 10000)  # units of 100 microseconds
         if packet.count == 0:
             response = packets.AppleMIDITimestampPacket.build(
                 dict(
@@ -167,7 +165,7 @@ class DataProtocol(BaseProtocol):
                     count=1,
                     ssrc=self.ssrc,
                     timestamp_1=packet.timestamp_1,
-                    timestamp_2=now,
+                    timestamp_2=get_timestamp(),
                     timestamp_3=0,
                 )
             )

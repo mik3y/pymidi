@@ -6,12 +6,12 @@ import select
 import socket
 import sys
 import random
-import time
 
 from pymidi import packets
 from pymidi import protocol
 from pymidi import utils
 from pymidi.utils import b2h
+from pymidi.utils import get_timestamp
 from construct import ConstructError
 
 try:
@@ -69,13 +69,12 @@ class Client(object):
         self.port = port
 
     def sync_timestamps(self, port):
-        ts1 = int(time.time() * 1000)
         packet = packets.AppleMIDITimestampPacket.create(
             command=protocol.APPLEMIDI_COMMAND_TIMESTAMP_SYNC,
             ssrc=self.ssrc,
             count=count,
             padding=0,
-            timestamp_1=ts1,
+            timestamp_1=get_timestamp(),
             timestamp_2=0,
             timestamp_3=0,
         )
@@ -126,7 +125,7 @@ class Client(object):
                     },
                     'sequence_number': ord('K'),
                 },
-                'timestamp': int(time.time()),
+                'timestamp': get_timestamp(),
                 'ssrc': self.ssrc,
             },
             command=command,
