@@ -93,7 +93,7 @@ MIDIPacketHeaderFlags = Bitwise(
 
 RTPHeader = Struct(
     'flags' / MIDIPacketHeaderFlags,
-    'sequence_number' / Int16ub,  # always 'K'
+    'sequence_number' / Int16ub,
 )
 
 MIDIPacketHeader = Struct(
