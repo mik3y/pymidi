@@ -69,6 +69,25 @@ class Client(object):
         self.host = host
         self.port = port
 
+    def disconnect(self):
+        if not self.socket[0]:
+            raise ClientError(f'Not connected to anywhere')
+
+        pkt = packets.AppleMIDIExchangePacket.create(
+            protocol_version=2,
+            command=protocol.APPLEMIDI_COMMAND_EXIT,
+            initiator_token=0,
+            ssrc=self.ssrc,
+            name=None
+        )
+        self.socket[0].sendto(pkt, (self.host, self.port))
+
+        for index in (0, 1): self.socket[index].close()
+
+        self.socket = [None,None]
+        self.host = None
+        self.port = None
+
     def sync_timestamps(self, port):
         packet = packets.AppleMIDITimestampPacket.create(
             command=protocol.APPLEMIDI_COMMAND_TIMESTAMP_SYNC,
