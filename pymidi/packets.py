@@ -80,6 +80,13 @@ AppleMIDITimestampPacket = Struct(
     'timestamp_3' / Int64ub,
 )
 
+AppleMIDIReceiverFeedbackPacket = Struct(
+    '_name' / Computed('AppleMIDIReceiverFeedbackPacket'),
+    'preamble' / Const(b'\xff\xffRS'),
+    'ssrc' / Int32ub,
+    'sequence_number' / Int32ub,
+)
+
 MIDIPacketHeaderFlags = Bitwise(
     Struct(
         'v' / BitsInteger(2),  # always 0x2
