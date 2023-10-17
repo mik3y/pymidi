@@ -48,7 +48,7 @@ def main():
     host = '0.0.0.0'
     port = 5004
     logger.info(f'Connecting to RTP-MIDI server @ {host}:{port} ...')
-    client.connect('0.0.0.0', port)
+    client.connect(host, port)
     logger.info('Connecting!')
     while True:
         logger.info('Striking key...')

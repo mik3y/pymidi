@@ -1,5 +1,6 @@
 import codecs
 import socket
+import time
 from six import string_types
 from builtins import bytes
 
@@ -51,3 +52,7 @@ def validate_addr(addr):
         raise ValueError('First param of address {} is not a valid ip'.format(repr(addr)))
     if not isinstance(addr[1], int):
         raise ValueError('Second param of address {} is not an int'.format(repr(addr)))
+
+
+def get_timestamp():
+    return int((time.time() * 10000) % 0x4000000) # RTP header timestamp is 32 bits

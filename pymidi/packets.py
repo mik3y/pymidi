@@ -10,6 +10,7 @@ COMMAND_NOTE_OFF = 0x80
 COMMAND_NOTE_ON = 0x90
 COMMAND_AFTERTOUCH = 0xA0
 COMMAND_CONTROL_MODE_CHANGE = 0xB0
+COMMAND_PITCH_BEND_CHANGE = 0xE0
 
 
 def to_string(pkt):
@@ -31,6 +32,10 @@ def to_string(pkt):
                 items.append(
                     '{} {} {}'.format(command, entry.params.controller, entry.params.value)
                 )
+            elif command == 'aftertouch':
+                items.append('{} {} {}'.format(command, entry.params.key, entry.params.touch))
+            elif command == 'pitch_bend_change':
+                items.append('{} {} {}'.format(command, entry.params.lsb, entry.params.msb))
             else:
                 items.append(command)
         detail = ' '.join(('[{}]'.format(i) for i in items))
@@ -75,6 +80,13 @@ AppleMIDITimestampPacket = Struct(
     'timestamp_3' / Int64ub,
 )
 
+AppleMIDIReceiverFeedbackPacket = Struct(
+    '_name' / Computed('AppleMIDIReceiverFeedbackPacket'),
+    'preamble' / Const(b'\xff\xffRS'),
+    'ssrc' / Int32ub,
+    'sequence_number' / Int32ub,
+)
+
 MIDIPacketHeaderFlags = Bitwise(
     Struct(
         'v' / BitsInteger(2),  # always 0x2
@@ -88,7 +100,7 @@ MIDIPacketHeaderFlags = Bitwise(
 
 RTPHeader = Struct(
     'flags' / MIDIPacketHeaderFlags,
-    'sequence_number' / Int16ub,  # always 'K'
+    'sequence_number' / Int16ub,
 )
 
 MIDIPacketHeader = Struct(
@@ -270,6 +282,7 @@ MIDIPacketCommand = Struct(
                         note_off=COMMAND_NOTE_OFF,
                         aftertouch=COMMAND_AFTERTOUCH,
                         control_mode_change=COMMAND_CONTROL_MODE_CHANGE,
+                        pitch_bend_change=COMMAND_PITCH_BEND_CHANGE
                     ),
                 ),
                 'channel' / If(_this.command_byte, Computed(_this.command_byte & 0x0F)),
@@ -292,6 +305,10 @@ MIDIPacketCommand = Struct(
                         'control_mode_change': Struct(
                             'controller' / Int8ub,
                             'value' / Int8ub,
+                        ),
+                        'pitch_bend_change': Struct(
+                            'lsb' / Int8ub,
+                            'msb' / Int8ub,
                         ),
                     },
                     default=Struct(

@@ -6,12 +6,12 @@ import select
 import socket
 import sys
 import random
-import time
 
 from pymidi import packets
 from pymidi import protocol
 from pymidi import utils
 from pymidi.utils import b2h
+from pymidi.utils import get_timestamp
 from construct import ConstructError
 
 try:
@@ -31,28 +31,35 @@ class AlreadyConnected(ClientError):
 
 
 class Client(object):
-    def __init__(self, name='PyMidi', ssrc=None):
+    def __init__(self, name='PyMidi', ssrc=None, sourcePort=None):
         """Creates a new Client instance."""
         self.ssrc = ssrc or random.randint(0, 2 ** 32 - 1)
-        self.socket = None
+        self.socket = [None,None] # Need to have a command and data socket on the client side
         self.host = None
         self.port = None
+        self.sourcePort = sourcePort or 5004
+        self.name = name or 'PyMidi'
+        self.sequenceNumber = 1
 
     def connect(self, host, port):
         if self.host and self.port:
             raise ClientError(f'Already connected to {self.host}:{self.port}')
 
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         pkt = packets.AppleMIDIExchangePacket.create(
             protocol_version=2,
             command=protocol.APPLEMIDI_COMMAND_INVITATION,
             initiator_token=random.randint(0, 2 ** 32 - 1),
             ssrc=self.ssrc,
+            name=self.name
         )
-        for target_port in (port, port + 1):
-            logger.info(f'Sending exchange packet to port {target_port}...')
-            self.socket.sendto(pkt, (host, target_port))
-            packet = self.get_next_packet()
+
+        for index in (0, 1):
+            self.socket[index] = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.socket[index].bind(('0.0.0.0', self.sourcePort+index))
+
+            logger.info(f'Sending exchange packet to port {port+index} from port {self.sourcePort+index}...')
+            self.socket[index].sendto(pkt, (host, port+index))
+            packet = self.get_next_packet(self.socket[index])
             if not packet:
                 raise Exception('No packet received')
             if packet._name != 'AppleMIDIExchangePacket':
@@ -62,14 +69,32 @@ class Client(object):
         self.host = host
         self.port = port
 
+    def disconnect(self):
+        if not self.socket[0]:
+            raise ClientError(f'Not connected to anywhere')
+
+        pkt = packets.AppleMIDIExchangePacket.create(
+            protocol_version=2,
+            command=protocol.APPLEMIDI_COMMAND_EXIT,
+            initiator_token=0,
+            ssrc=self.ssrc,
+            name=None
+        )
+        self.socket[0].sendto(pkt, (self.host, self.port))
+
+        for index in (0, 1): self.socket[index].close()
+
+        self.socket = [None,None]
+        self.host = None
+        self.port = None
+
     def sync_timestamps(self, port):
-        ts1 = int(time.time() * 1000)
         packet = packets.AppleMIDITimestampPacket.create(
             command=protocol.APPLEMIDI_COMMAND_TIMESTAMP_SYNC,
             ssrc=self.ssrc,
             count=count,
             padding=0,
-            timestamp_1=ts1,
+            timestamp_1=get_timestamp(),
             timestamp_2=0,
             timestamp_3=0,
         )
@@ -104,25 +129,9 @@ class Client(object):
                 }
             ],
         }
-        self._send_rtp_command(command)
+        self._send_rtp_command(self.socket[1], command)
 
-    def _send_rtp_command(self, command):
-        header = packets.MIDIPacketHeader.create(
-            rtp_header={
-                'flags': {
-                    'v': 0x2,
-                    'p': 0,
-                    'x': 0,
-                    'cc': 0,
-                    'm': 0x1,
-                    'pt': 0x61,
-                },
-                'sequence_number': ord('K'),
-            },
-            timestamp=int(time.time()),
-            ssrc=self.ssrc,
-        )
-
+    def _send_rtp_command(self, socket, command):
         packet = packets.MIDIPacket.create(
             header={
                 'rtp_header': {
@@ -134,19 +143,20 @@ class Client(object):
                         'm': 0x1,
                         'pt': 0x61,
                     },
-                    'sequence_number': ord('K'),
+                    'sequence_number': self.sequenceNumber,
                 },
-                'timestamp': int(time.time()),
+                'timestamp': get_timestamp(),
                 'ssrc': self.ssrc,
             },
             command=command,
             journal='',
         )
 
-        self.socket.sendto(packet, (self.host, self.port + 1))
+        socket.sendto(packet, (self.host, self.port + 1))
+        self.sequenceNumber += 1
 
-    def get_next_packet(self):
-        data, addr = self.socket.recvfrom(1024)
+    def get_next_packet(self, socket):
+        data, addr = socket.recvfrom(1024)
         command = data[2:4]
         try:
             if data[0:2] == protocol.APPLEMIDI_PREAMBLE:

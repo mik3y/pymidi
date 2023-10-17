@@ -1,9 +1,9 @@
 import logging
 import random
-import time
 
 from pymidi import packets
 from pymidi.utils import b2h
+from pymidi.utils import get_timestamp
 from construct import ConstructError
 
 # Command messages are preceded with this sequence.
@@ -14,6 +14,7 @@ APPLEMIDI_COMMAND_INVITATION = b'IN'
 APPLEMIDI_COMMAND_INVITATION_ACCEPTED = b'OK'
 APPLEMIDI_COMMAND_INVITATION_REJECTED = b'NO'
 APPLEMIDI_COMMAND_TIMESTAMP_SYNC = b'CK'
+APPLEMIDI_COMMAND_JOURNAL_SYNCHRONIZATION = b'RS'
 APPLEMIDI_COMMAND_EXIT = b'BY'
 
 
@@ -105,9 +106,13 @@ class BaseProtocol(object):
                 return
             peer = self._disconnect_peer(ssrc)
             self.logger.info('Peer {} exited'.format(peer))
+        elif command == APPLEMIDI_COMMAND_JOURNAL_SYNCHRONIZATION:
+            #
+            # To be implemented
+            #
+            self.logger.warning('Ignoring unsupported command (journal sync): {}'.format(command))
         else:
             self.logger.warning('Ignoring unrecognized command: {}'.format(command))
-
 
 class ControlProtocol(BaseProtocol):
     def __init__(self, data_protocol=None, *args, **kwargs):
@@ -153,7 +158,6 @@ class DataProtocol(BaseProtocol):
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(packet)
 
-        now = int(time.time() * 10000)  # units of 100 microseconds
         if packet.count == 0:
             response = packets.AppleMIDITimestampPacket.build(
                 dict(
@@ -161,7 +165,7 @@ class DataProtocol(BaseProtocol):
                     count=1,
                     ssrc=self.ssrc,
                     timestamp_1=packet.timestamp_1,
-                    timestamp_2=now,
+                    timestamp_2=get_timestamp(),
                     timestamp_3=0,
                 )
             )
@@ -169,3 +173,6 @@ class DataProtocol(BaseProtocol):
         elif packet.count == 2:
             offset_estimate = ((packet.timestamp_3 + packet.timestamp_1) / 2) - packet.timestamp_2
             self.logger.debug('offset estimate: {}'.format(offset_estimate))
+
+            latency = (packet.timestamp_3-packet.timestamp_1)/10
+            self.logger.info('Peer {} latency: {}ms'.format(self.peers_by_ssrc[packet.ssrc].name,latency))
